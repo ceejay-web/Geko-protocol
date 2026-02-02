@@ -25,7 +25,7 @@ pool.query(`
   );
 `).catch(console.error);
 
-// Proxy for Binance
+// Proxy for Binance Klines
 app.get('/api/binance/klines', async (req, res) => {
   try {
     const { symbol, interval, limit } = req.query;
@@ -35,6 +35,18 @@ app.get('/api/binance/klines', async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch from Binance' });
+  }
+});
+
+// Proxy for Binance Prices (Multiple Symbols)
+app.get('/api/binance/prices', async (req, res) => {
+  try {
+    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    if (!response.ok) throw new Error('Binance error');
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices from Binance' });
   }
 });
 

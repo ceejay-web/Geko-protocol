@@ -58,6 +58,25 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
+    // Try Binance Proxy first for most accurate data
+    const response = await fetch('http://localhost:5001/api/binance/prices');
+    if (response.ok) {
+        const data = await response.json();
+        const results: Record<string, { price: number, change: number }> = {};
+        data.forEach((item: any) => {
+            if (item.symbol.endsWith('USDT')) {
+                const symbol = item.symbol.replace('USDT', '');
+                results[symbol] = {
+                    price: parseFloat(item.lastPrice),
+                    change: parseFloat(item.priceChangePercent)
+                };
+            }
+        });
+        return results;
+    }
+  } catch (e) {}
+
+  try {
     const response = await fetch('https://api.coincap.io/v2/assets?limit=50');
     if (!response.ok) return {};
     const json = await response.json();
