@@ -80,10 +80,18 @@ export const universalWallet = {
                 } catch (e) { }
             };
 
+            // Fetch dynamic prices from our proxy
+            const priceResponse = await fetch('/api/binance/prices').catch(() => null);
+            const priceData = priceResponse && priceResponse.ok ? await priceResponse.json() : [];
+            const getPrice = (sym: string, def: number) => {
+                const found = priceData.find((p: any) => p.symbol === `${sym}USDT`);
+                return found ? parseFloat(found.lastPrice) : def;
+            };
+
             await Promise.all([
-                fetchChainBalance(RPC_PROVIDERS.ETH, 'ETH', 2950),
-                fetchChainBalance(RPC_PROVIDERS.BSC, 'BNB', 590),
-                fetchChainBalance(RPC_PROVIDERS.MATIC, 'MATIC', 0.42)
+                fetchChainBalance(RPC_PROVIDERS.ETH, 'ETH', getPrice('ETH', 2950)),
+                fetchChainBalance(RPC_PROVIDERS.BSC, 'BNB', getPrice('BNB', 590)),
+                fetchChainBalance(RPC_PROVIDERS.MATIC, 'MATIC', getPrice('MATIC', 0.42))
             ]);
 
             return balances.length > 0 ? balances : [{ symbol: 'ETH', amount: '0.00', valueUsd: '0.00' }];
@@ -100,7 +108,10 @@ export const universalWallet = {
                 const data = await response.json();
                 if (data.result?.value !== undefined) {
                     const solAmt = parseFloat(formatBalance(data.result.value, 9).replace(/,/g, ''));
-                    balances.push({ symbol: 'SOL', amount: solAmt.toFixed(2), valueUsd: (solAmt * 165).toFixed(2) });
+                    const priceResponse = await fetch('/api/binance/prices').catch(() => null);
+                    const priceData = priceResponse && priceResponse.ok ? await priceResponse.json() : [];
+                    const solPrice = priceData.find((p: any) => p.symbol === 'SOLUSDT')?.lastPrice || 165;
+                    balances.push({ symbol: 'SOL', amount: solAmt.toFixed(2), valueUsd: (solAmt * parseFloat(solPrice as string)).toFixed(2) });
                 }
             } catch (e) { }
             return balances.length > 0 ? balances : [{ symbol: 'SOL', amount: '0.00', valueUsd: '0.00' }];
