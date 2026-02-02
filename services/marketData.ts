@@ -1,6 +1,6 @@
 import { MarketData } from "../types";
 
-const BINANCE_API = 'https://api.binance.com/api/v3';
+const BINANCE_API = 'http://localhost:5001/api/binance';
 
 // Map App symbols to CoinCap IDs for fallback
 const ASSET_ID_MAP: Record<string, string> = {
@@ -43,16 +43,13 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
     // Generate backwards
     for (let i = count; i >= 0; i--) {
         const time = now - (i * 15 * 60);
-        // Random walk
         const volatility = price * 0.008; 
         const change = (Math.random() - 0.5) * volatility;
-        
         const close = price + change;
         const open = price;
         const high = Math.max(open, close) + Math.random() * volatility * 0.3;
         const low = Math.min(open, close) - Math.random() * volatility * 0.3;
         const volume = Math.random() * 50000 + 10000;
-
         candles.push({ time, open, high, low, close, volume });
         price = close;
     }
@@ -61,19 +58,10 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased timeout to 5s
-
-    const response = await fetch('https://api.coincap.io/v2/assets?limit=50', { signal: controller.signal });
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-        return {}; // Silent fail
-    }
-    
+    const response = await fetch('https://api.coincap.io/v2/assets?limit=50');
+    if (!response.ok) return {};
     const json = await response.json();
     const results: Record<string, { price: number, change: number }> = {};
-    
     if (json && json.data) {
         json.data.forEach((asset: any) => {
             const symbol = asset.symbol.toUpperCase();
@@ -83,24 +71,16 @@ export async function fetchRealPrices(): Promise<Partial<Record<string, { price:
             };
         });
     }
-    
     return results;
   } catch (error: any) {
-    // Completely silent fallback to simulation to avoid UI alerts
     return {};
   }
 }
 
 export async function fetchCandles(symbol: string): Promise<MarketData[]> {
-    // 1. Try Binance
     try {
         const pair = `${symbol}USDT`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // Fast fail
-        
-        const response = await fetch(`${BINANCE_API}/klines?symbol=${pair}&interval=15m&limit=100`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
+        const response = await fetch(`${BINANCE_API}/klines?symbol=${pair}&interval=15m&limit=100`);
         if (response.ok) {
             const data = await response.json();
             return data.map((d: any) => ({
@@ -113,18 +93,12 @@ export async function fetchCandles(symbol: string): Promise<MarketData[]> {
             }));
         }
     } catch (e) {
-        // Ignore
+        // Fallback to simulation
     }
 
-    // 2. Try CoinCap
     try {
         const id = ASSET_ID_MAP[symbol] || symbol.toLowerCase();
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-        const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
+        const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`);
         if (response.ok) {
             const json = await response.json();
             if (json.data && json.data.length > 0) {
@@ -141,10 +115,7 @@ export async function fetchCandles(symbol: string): Promise<MarketData[]> {
                 });
             }
         }
-    } catch (err) {
-        // Ignore errors to use simulation
-    }
+    } catch (err) {}
 
-    // 3. Fallback to Simulation
     return generateMockCandles(symbol);
 }

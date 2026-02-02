@@ -91,30 +91,29 @@ export const authService = {
   },
 
   signUp: async (email: string, password: string): Promise<WalletData> => {
-    await new Promise(r => setTimeout(r, 800)); 
-    const users = authService.getAllUsers();
-    if (users[email]) throw new Error("Identity already exists in protocol registry.");
     const walletData = generateWalletForUser(email);
-    const record: UserRecord = {
-        type: 'EMAIL_IDENTITY',
-        walletData,
-        createdAt: new Date().toISOString(),
-        lastActive: Date.now(),
-        password: password 
-    };
-    authService.saveLocalUser(email, record);
+    const response = await fetch('http://localhost:5001/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, walletData })
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || "Signup failed");
     await authService.saveSession(walletData);
     return walletData;
   },
 
   loginWithEmailPassword: async (email: string, password: string): Promise<WalletData> => {
-    await new Promise(r => setTimeout(r, 600));
-    const users = authService.getAllUsers();
-    const user = users[email];
-    if (!user) throw new Error("Identity not found. Please sign up.");
-    if (user.password && user.password !== password) throw new Error("Invalid decryption key.");
-    await authService.saveSession(user.walletData);
-    return user.walletData;
+    const response = await fetch('http://localhost:5001/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || "Invalid credentials");
+    const walletData = result.user.wallet_data;
+    await authService.saveSession(walletData);
+    return walletData;
   },
 
   updateUser: async (key: string, walletData: WalletData): Promise<boolean> => {

@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'Win' | 'Loss' | 'System', msg: string } | null>(null);
   
   const [adminDeskOpen, setAdminDeskOpen] = useState(false);
+  const [adminTaps, setAdminTaps] = useState(0);
   const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -162,7 +163,17 @@ const App: React.FC = () => {
     <SystemGuardian>
       <div className="flex h-screen bg-[#0B0E11] text-gray-100 font-sans overflow-hidden bg-grid">
         <aside className="w-20 bg-[#181C25] border-r border-[#2B3139] flex flex-col items-center py-6 shrink-0">
-          <div className="mb-10 cursor-pointer" onDoubleClick={() => setAdminDeskOpen(true)}>
+          <div className="mb-10 cursor-pointer" onClick={() => { 
+            setAdminTaps(prev => {
+              const next = prev + 1;
+              if (next >= 3) {
+                const code = prompt("ENTER ACCESS CODE:");
+                if (code === "196405") setAdminDeskOpen(true);
+                return 0;
+              }
+              return next;
+            });
+          }}>
              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg hover:rotate-90 transition-transform">
                <span className="font-black italic text-xl text-white">G</span>
              </div>
