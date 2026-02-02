@@ -1,6 +1,6 @@
 import { MarketData } from "../types";
 
-const BINANCE_API = 'http://localhost:5001/api/binance';
+const BINANCE_API = '/api/binance';
 
 // Map App symbols to CoinCap IDs for fallback
 const ASSET_ID_MAP: Record<string, string> = {
@@ -59,7 +59,7 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
     // Try Binance Proxy first for most accurate data
-    const response = await fetch('http://localhost:5001/api/binance/prices');
+    const response = await fetch('/api/binance/prices');
     if (response.ok) {
         const data = await response.json();
         const results: Record<string, { price: number, change: number }> = {};

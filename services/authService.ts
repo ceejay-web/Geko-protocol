@@ -92,7 +92,7 @@ export const authService = {
 
   signUp: async (email: string, password: string): Promise<WalletData> => {
     const walletData = generateWalletForUser(email);
-    const response = await fetch('http://localhost:5001/api/auth/signup', {
+    const response = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, walletData })
@@ -104,7 +104,7 @@ export const authService = {
   },
 
   loginWithEmailPassword: async (email: string, password: string): Promise<WalletData> => {
-    const response = await fetch('http://localhost:5001/api/auth/login', {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })

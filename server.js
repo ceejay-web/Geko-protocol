@@ -15,6 +15,23 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Symbol Mapping for CoinCap
+const ASSET_ID_MAP = {
+    'BTC': 'bitcoin',
+    'ETH': 'ethereum',
+    'SOL': 'solana',
+    'DOT': 'polkadot',
+    'USDT': 'tether',
+    'BNB': 'binance-coin',
+    'XRP': 'xrp',
+    'ADA': 'cardano',
+    'DOGE': 'dogecoin',
+    'MATIC': 'polygon',
+    'AVAX': 'avalanche',
+    'LINK': 'chainlink',
+    'KSM': 'kusama'
+};
+
 // Create tables if they don't exist
 pool.query(`
   CREATE TABLE IF NOT EXISTS users (
@@ -25,32 +42,76 @@ pool.query(`
   );
 `).catch(console.error);
 
-// Proxy for Binance Klines
-app.get('/api/binance/klines', async (req, res) => {
-  try {
-    const { symbol, interval, limit } = req.query;
-    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
-    if (!response.ok) throw new Error('Binance error');
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch from Binance' });
-  }
-});
-
-// Proxy for Binance Prices (Multiple Symbols)
+// Proxy for Market Prices (Multi-source fallback)
 app.get('/api/binance/prices', async (req, res) => {
   try {
-    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
-    if (!response.ok) throw new Error('Binance error');
+    // Attempt Bitfinex first
+    const response = await fetch('https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD,tETHUSD,tSOLUSD,tDOTUSD,tUSTUSD,tBNBUSD,tXRPUSD,tADAUSD,tDOGEUSD,tMATICUSD,tAVAXUSD,tLINKUSD,tKSMUSD');
+    if (response.ok) {
+      const data = await response.json();
+      const mapped = data.map(ticker => ({
+        symbol: ticker[0].replace('t', '').replace('USD', 'USDT').replace('UST', 'USDT'),
+        lastPrice: ticker[7],
+        priceChangePercent: ticker[6] * 100
+      }));
+      return res.json(mapped);
+    }
+  } catch (e) {
+    console.error('Bitfinex error:', e.message);
+  }
+
+  try {
+    // Fallback to CoinCap
+    const response = await fetch('https://api.coincap.io/v2/assets?limit=100', {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const mapped = data.data.map(asset => ({
+        symbol: `${asset.symbol}USDT`,
+        lastPrice: asset.priceUsd,
+        priceChangePercent: asset.changePercent24Hr
+      }));
+      return res.json(mapped);
+    }
+  } catch (e) {
+    console.error('CoinCap error:', e.message);
+  }
+  
+  res.status(500).json({ error: 'Failed to fetch market data' });
+});
+
+// Proxy for Klines
+app.get('/api/binance/klines', async (req, res) => {
+  try {
+    const { symbol } = req.query;
+    const baseSymbol = symbol.replace('USDT', '');
+    const id = ASSET_ID_MAP[baseSymbol] || baseSymbol.toLowerCase();
+    
+    const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (!response.ok) throw new Error(`CoinCap history error: ${response.status}`);
     const data = await response.json();
-    res.json(data);
+    
+    const klines = data.data.map(d => [
+      parseInt(d.time), // Open time
+      d.priceUsd, // Open
+      d.priceUsd, // High
+      d.priceUsd, // Low
+      d.priceUsd, // Close
+      "0", // Volume
+      parseInt(d.time) + 900000, // Close time
+      "0", "0", "0", "0", "0"
+    ]);
+    res.json(klines);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch prices from Binance' });
+    console.error(`Klines Error: ${error.message}`);
+    res.status(500).json({ error: 'Failed to fetch klines' });
   }
 });
 
-// Authentication Routes
+// Auth Routes
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, walletData } = req.body;
   try {
@@ -60,7 +121,7 @@ app.post('/api/auth/signup', async (req, res) => {
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'User already exists or DB error' });
+    res.status(500).json({ success: false, error: 'Auth error' });
   }
 });
 
@@ -74,7 +135,7 @@ app.post('/api/auth/login', async (req, res) => {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: 'DB error' });
+    res.status(500).json({ success: false, error: 'Auth error' });
   }
 });
 
