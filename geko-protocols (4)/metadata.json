@@ -1,0 +1,8 @@
+{
+  "name": "Geko Protocols",
+  "description": "The world's most advanced institutional digital asset terminal. Features real-time liquidity aggregation, AI-driven settlement, and deep market sentiment analysis.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
