@@ -97,7 +97,14 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, walletData })
     });
-    const result = await response.json();
+    
+    let result;
+    try {
+      const text = await response.text();
+      result = text ? JSON.parse(text) : { success: false, error: 'Empty response from server' };
+    } catch (e) {
+      result = { success: false, error: 'Malformed server response' };
+    }
     if (!result.success) throw new Error(result.error || "Signup failed");
     await authService.saveSession(walletData);
     return walletData;
@@ -109,7 +116,14 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const result = await response.json();
+    
+    let result;
+    try {
+      const text = await response.text();
+      result = text ? JSON.parse(text) : { success: false, error: 'Empty response from server' };
+    } catch (e) {
+      result = { success: false, error: 'Malformed server response' };
+    }
     if (!result.success) throw new Error(result.error || "Invalid credentials");
     const walletData = result.user.wallet_data;
     await authService.saveSession(walletData);

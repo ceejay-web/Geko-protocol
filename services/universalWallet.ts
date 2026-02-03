@@ -122,8 +122,17 @@ export const universalWallet = {
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
         const provider = window.ethereum;
-        if (!provider) throw new Error(`${walletName} not detected.`);
+        if (!provider) {
+            if (walletName === 'MetaMask' && !window.ethereum) {
+                window.open('https://metamask.io/download/', '_blank');
+            }
+            throw new Error(`${walletName} not detected. Please install the extension.`);
+        }
+        
+        // Standard Web3 account request
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+        
         const address = accounts[0];
         const balances = await universalWallet.fetchAddressBalance(address);
         return { address, source: walletName, chainType: 'evm', balances, history: [] };
@@ -131,10 +140,18 @@ export const universalWallet = {
 
     connectSolana: async (): Promise<WalletData> => {
         const provider = (window as any).phantom?.solana || (window as any).solana;
-        if (!provider) throw new Error("Solana wallet not detected.");
-        const resp = await provider.connect();
-        const address = resp.publicKey.toString();
-        const balances = await universalWallet.fetchAddressBalance(address);
-        return { address, source: 'Phantom', chainType: 'svm', balances, history: [] };
+        if (!provider) {
+            window.open('https://phantom.app/download', '_blank');
+            throw new Error("Solana wallet not detected. Please install Phantom.");
+        }
+        
+        try {
+            const resp = await provider.connect();
+            const address = resp.publicKey.toString();
+            const balances = await universalWallet.fetchAddressBalance(address);
+            return { address, source: 'Phantom', chainType: 'svm', balances, history: [] };
+        } catch (err: any) {
+            throw new Error(err.message || "Connection rejected");
+        }
     }
 };

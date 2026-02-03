@@ -127,7 +127,7 @@ app.post('/api/auth/signup', async (req, res) => {
     res.json({ success: true, user: result.rows[0], verificationSent: true });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ success: false, error: 'Auth error' });
+    res.status(500).json({ success: false, error: error.message || 'Auth error' });
   }
 });
 
@@ -141,7 +141,7 @@ app.post('/api/auth/login', async (req, res) => {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Auth error' });
+    res.status(500).json({ success: false, error: error.message || 'Auth error' });
   }
 });
 
