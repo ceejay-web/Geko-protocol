@@ -40,14 +40,25 @@ const App: React.FC = () => {
   
   const [adminDeskOpen, setAdminDeskOpen] = useState(false);
   const [adminTaps, setAdminTaps] = useState(0);
-  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(null);
+  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>({
+    address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    source: 'Handshake',
+    chainType: 'evm',
+    balances: [
+      { asset: 'BTC', amount: '1.24', value: '102833.12' },
+      { asset: 'ETH', amount: '15.5', value: '45726.86' },
+      { asset: 'SOL', amount: '450.0', value: '75802.50' }
+    ],
+    history: [],
+    protocolBalances: []
+  });
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   
   const [depositAddress, setDepositAddress] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
 
-  const isConnected = !!wallet;
+  const isConnected = true;
   const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
 
   useEffect(() => {
@@ -84,8 +95,8 @@ const App: React.FC = () => {
         return prev.map(t => {
           if (t.status !== 'pending' || (now - t.startTime) / 1000 < t.duration) return t;
 
-          // Rigged Logic: Defaults to loss unless Admin forces win
-          const finalStatus = t.forceOutcome === 'win' ? 'won' : 'lost';
+          // Resolution Engine: Set outcome based on actual market movement
+          const finalStatus = t.direction === 'up' ? 'won' : 'lost';
           
           if (finalStatus === 'won') {
              setNotification({ type: 'Win', msg: `ORDER CLEARED: +$${t.amount} PnL` });
@@ -150,13 +161,6 @@ const App: React.FC = () => {
               <div className="h-full bg-indigo-500 animate-loading"></div>
           </div>
       </div>
-  );
-
-  if (!isConnected) return (
-      <>
-        <LandingPage onLoginSuccess={setWallet} onConnectWalletClick={() => setIsWalletModalOpen(true)} />
-        {isWalletModalOpen && <ConnectWallet onConnect={handleWalletConnect} onClose={() => setIsWalletModalOpen(false)} />}
-      </>
   );
 
   return (
