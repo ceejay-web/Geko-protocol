@@ -45,9 +45,9 @@ const App: React.FC = () => {
     source: 'Handshake',
     chainType: 'evm',
     balances: [
-      { asset: 'BTC', amount: '1.24', value: '102833.12' },
-      { asset: 'ETH', amount: '15.5', value: '45726.86' },
-      { asset: 'SOL', amount: '450.0', value: '75802.50' }
+      { symbol: 'BTC', amount: '1.24', valueUsd: '102833.12' },
+      { symbol: 'ETH', amount: '15.5', valueUsd: '45726.86' },
+      { symbol: 'SOL', amount: '450.0', valueUsd: '75802.50' }
     ],
     history: [],
     protocolBalances: []
