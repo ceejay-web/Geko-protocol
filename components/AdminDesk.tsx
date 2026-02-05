@@ -225,6 +225,26 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                    <h2 className="text-lg font-black uppercase italic text-indigo-400 px-4">Protocol Overrides</h2>
                    <div className="bg-[#181C25] border border-[#2B3139] p-8 rounded-[40px] space-y-8">
                        <div className="space-y-4">
+                           <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Protocol Vault Balance Override</label>
+                           <div className="flex space-x-4">
+                               <input 
+                                   type="text" 
+                                   id="vault_balance_input"
+                                   defaultValue="25,000.00"
+                                   className="flex-1 bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-5 text-xs text-emerald-400 font-mono"
+                               />
+                               <button 
+                                   onClick={() => {
+                                       const val = (document.getElementById('vault_balance_input') as HTMLInputElement).value;
+                                       alert(`Protocol Vault Updated to: $${val}`);
+                                   }}
+                                   className="px-8 bg-[#2B3139] hover:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl transition-all"
+                               >
+                                   Set
+                               </button>
+                           </div>
+                       </div>
+                       <div className="space-y-4">
                            <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Global Deposit Sink</label>
                            <input 
                                type="text" 
