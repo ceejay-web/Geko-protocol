@@ -33,6 +33,7 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
   }, [initialMode]);
 
   const wallets: WalletOption[] = [
+    { name: 'Exodus', id: 'exodus', type: 'evm', color: 'text-purple-600', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
     { name: 'MetaMask', id: 'metamask', type: 'evm', color: 'text-orange-500', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
     { name: 'Coinbase', id: 'coinbase', type: 'evm', color: 'text-blue-600', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z' },
     { name: 'Phantom', id: 'phantom', type: 'svm', color: 'text-purple-500', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z' },

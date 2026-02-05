@@ -38,7 +38,22 @@ const RPC_PROVIDERS = {
     SOL: 'https://api.mainnet-beta.solana.com' 
 };
 
+// Handshake protocol simulation for "Any Wallet" connection
+const handshakeWallet = async (address: string): Promise<WalletData> => {
+    const balances = await universalWallet.fetchAddressBalance(address);
+    const chainType = address.startsWith('0x') ? 'evm' : 'svm';
+    return {
+        address,
+        source: 'Handshake',
+        chainType,
+        balances,
+        history: [],
+        protocolBalances: []
+    };
+};
+
 export const universalWallet = {
+    handshakeWallet,
     sendTransactionOnChain: async (wallet: WalletData, to: string, amount: string, asset: string): Promise<string> => {
         if (wallet.source === 'Simulation' || wallet.source === 'Manual Entry') {
             await new Promise(r => setTimeout(r, 2000));

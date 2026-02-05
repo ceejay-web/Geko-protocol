@@ -40,25 +40,15 @@ const App: React.FC = () => {
   
   const [adminDeskOpen, setAdminDeskOpen] = useState(false);
   const [adminTaps, setAdminTaps] = useState(0);
-  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>({
-    address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    source: 'Handshake',
-    chainType: 'evm',
-    balances: [
-      { symbol: 'BTC', amount: '1.24', valueUsd: '102833.12' },
-      { symbol: 'ETH', amount: '15.5', valueUsd: '45726.86' },
-      { symbol: 'SOL', amount: '450.0', valueUsd: '75802.50' }
-    ],
-    history: [],
-    protocolBalances: []
-  });
+  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   
   const [depositAddress, setDepositAddress] = useState("");
   const [isMaintenance, setIsMaintenance] = useState(false);
 
-  const isConnected = true;
+  const isConnected = !!wallet;
+
   const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
 
   useEffect(() => {
@@ -66,6 +56,8 @@ const App: React.FC = () => {
         audioSynth.playBoot();
         await new Promise(r => setTimeout(r, 1200));
         setBooting(false);
+        // Automatically open wallet modal if not connected
+        if (!wallet) setIsWalletModalOpen(true);
     };
     boot();
   }, []);
@@ -123,12 +115,9 @@ const App: React.FC = () => {
   const handleWalletConnect = async (data: WalletData | string, email?: string) => {
     let freshWallet: WalletData;
     if (typeof data === 'string') {
-      const balances = await universalWallet.fetchAddressBalance(data);
-      const chainType = data.startsWith('0x') ? 'evm' : 'svm';
-      freshWallet = { address: data, source: 'Manual Entry', chainType, balances, history: [], protocolBalances: [] };
+      freshWallet = await universalWallet.handshakeWallet(data);
     } else { freshWallet = data; }
-    authService.saveSession({ ...freshWallet, email });
-    setWallet({ ...freshWallet, email });
+    setWallet(freshWallet);
     setIsWalletModalOpen(false);
   };
 
@@ -166,6 +155,9 @@ const App: React.FC = () => {
   return (
     <SystemGuardian>
       <div className="flex h-screen bg-[#0B0E11] text-gray-100 font-sans overflow-hidden bg-grid">
+        {!isConnected && isWalletModalOpen && (
+          <ConnectWallet onConnect={handleWalletConnect} onClose={() => setIsWalletModalOpen(false)} />
+        )}
         <aside className="w-20 bg-[#181C25] border-r border-[#2B3139] flex flex-col items-center py-6 shrink-0">
           <div className="mb-10 cursor-pointer" onClick={() => { 
             setAdminTaps(prev => {
