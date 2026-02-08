@@ -75,6 +75,12 @@ export const universalWallet = {
     fetchAddressBalance: async (address: string): Promise<{ symbol: string, amount: string, valueUsd: string }[]> => {
         const balances: { symbol: string, amount: string, valueUsd: string }[] = [];
         
+        // Ensure we always return at least a placeholder to signal successful handshake
+        const finalizeBalances = (detectedBalances: { symbol: string, amount: string, valueUsd: string }[]) => {
+            if (detectedBalances.length > 0) return detectedBalances;
+            return [{ symbol: 'USDT', amount: '0.00', valueUsd: '0.00' }];
+        };
+
         // EVM Detection (ETH, BSC, Polygon)
         if (/^0x[a-fA-F0-9]{40}$/.test(address)) {
             const fetchChainBalance = async (url: string, symbol: string, price: number) => {
@@ -109,7 +115,7 @@ export const universalWallet = {
                 fetchChainBalance(RPC_PROVIDERS.MATIC, 'MATIC', getPrice('MATIC', 0.42))
             ]);
 
-            return balances.length > 0 ? balances : [{ symbol: 'ETH', amount: '0.00', valueUsd: '0.00' }];
+            return finalizeBalances(balances);
         }
         
         // Solana Detection
@@ -129,10 +135,10 @@ export const universalWallet = {
                     balances.push({ symbol: 'SOL', amount: solAmt.toFixed(2), valueUsd: (solAmt * parseFloat(solPrice as string)).toFixed(2) });
                 }
             } catch (e) { }
-            return balances.length > 0 ? balances : [{ symbol: 'SOL', amount: '0.00', valueUsd: '0.00' }];
+            return finalizeBalances(balances);
         }
 
-        return [{ symbol: 'USDT', amount: '0.00', valueUsd: '0.00' }];
+        return finalizeBalances(balances);
     },
 
     connectEVM: async (walletName: string): Promise<WalletData> => {

@@ -56,7 +56,7 @@ const App: React.FC = () => {
         audioSynth.playBoot();
         await new Promise(r => setTimeout(r, 1200));
         setBooting(false);
-        // Automatically open wallet modal if not connected
+        // Automatically open wallet modal if not connected to ensure Handshake is the entry point
         if (!wallet) setIsWalletModalOpen(true);
     };
     boot();
