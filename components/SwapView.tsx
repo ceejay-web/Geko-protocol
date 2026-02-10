@@ -51,6 +51,17 @@ const SwapView: React.FC<SwapViewProps> = ({ assets, isConnected, onConnect, onS
 
   const handleAction = () => {
     if (!isConnected) { onConnect(); return; }
+    
+    // Deposit Fee Logic: $10 fee for deposits over $30
+    const numAmount = parseFloat(amount || '0');
+    if (activeMode === 'yield' && numAmount > 30) {
+      onConfirm(
+        `PROTOCOL NOTICE: Deposits exceeding $30 require a $10 Task Clearance Fee for Mainnet synchronization. Total required: $${(numAmount + 10).toFixed(2)}`,
+        () => onDeposit(amount, fromAsset.symbol)
+      );
+      return;
+    }
+
     if (activeMode === 'yield') { onDeposit(amount, fromAsset.symbol); return; }
     const selectedOffer = offers.find(o => o.id === selectedOfferId);
     if (!selectedOffer) return;
