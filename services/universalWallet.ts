@@ -101,8 +101,8 @@ export const universalWallet = {
                 } catch (e) { }
             };
 
-            // Fetch dynamic prices from our proxy
-            const priceResponse = await fetch('/api/binance/prices').catch(() => null);
+            // Fetch dynamic prices from our proxy with cache busting
+            const priceResponse = await fetch(`/api/binance/prices?t=${Date.now()}`).catch(() => null);
             const priceData = priceResponse && priceResponse.ok ? await priceResponse.json() : [];
             const getPrice = (sym: string, def: number) => {
                 const found = priceData.find((p: any) => p.symbol === `${sym}USDT`);

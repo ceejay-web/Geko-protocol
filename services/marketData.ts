@@ -19,20 +19,20 @@ const ASSET_ID_MAP: Record<string, string> = {
     'KSM': 'kusama'
 };
 
-// Base prices for simulation fallback
+// Base prices for simulation fallback (updated with recent market trends)
 const BASE_PRICES: Record<string, number> = {
-    'BTC': 82929.94,
-    'ETH': 2950,
-    'SOL': 168,
-    'DOT': 6.80,
-    'KSM': 41.5,
+    'BTC': 96500.00,
+    'ETH': 2750,
+    'SOL': 195,
+    'DOT': 7.20,
+    'KSM': 45.5,
     'USDT': 1.00,
-    'BNB': 595,
-    'XRP': 0.89,
-    'ADA': 0.52,
-    'AVAX': 31.8,
-    'LINK': 15.2,
-    'MATIC': 0.38
+    'BNB': 620,
+    'XRP': 1.12,
+    'ADA': 0.65,
+    'AVAX': 38.5,
+    'LINK': 18.2,
+    'MATIC': 0.45
 };
 
 const generateMockCandles = (symbol: string, count: number = 100): MarketData[] => {
@@ -58,8 +58,8 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
-    // Try Binance Proxy first for most accurate data
-    const response = await fetch('/api/binance/prices');
+    // Try Binance Proxy first for most accurate data with cache busting
+    const response = await fetch(`/api/binance/prices?t=${Date.now()}`);
     if (response.ok) {
         const data = await response.json();
         const results: Record<string, { price: number, change: number }> = {};
