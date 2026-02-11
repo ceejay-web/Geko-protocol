@@ -195,6 +195,29 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                <div className="space-y-6">
                    <h2 className="text-lg font-black uppercase italic text-indigo-400 px-4">Registry Explorer</h2>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                       {/* Active Session Simulation for Live Monitoring */}
+                       <div className="bg-[#181C25] border border-emerald-500/30 p-6 rounded-[32px] space-y-4 shadow-xl relative overflow-hidden">
+                           <div className="absolute top-0 right-0 p-4">
+                               <div className="flex items-center space-x-1">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                   <span className="text-[8px] font-black text-emerald-500 uppercase">Live_Now</span>
+                               </div>
+                           </div>
+                           <div className="flex justify-between items-start">
+                               <div className="w-10 h-10 bg-emerald-600/20 rounded-xl flex items-center justify-center text-emerald-400 font-black">
+                                   L
+                               </div>
+                               <div className="text-[8px] text-gray-500 uppercase font-black">Device: Laptop/Chrome</div>
+                           </div>
+                           <div>
+                               <div className="text-sm font-bold text-gray-200 truncate">Active Node: 172.x.x.x</div>
+                               <div className="text-[9px] text-gray-500 font-mono mt-1">Session established via published link</div>
+                           </div>
+                           <div className="bg-[#0B0E11] p-3 rounded-2xl border border-[#2B3139]">
+                               <div className="text-[8px] text-gray-600 uppercase font-black">Activity Status</div>
+                               <div className="text-xs font-mono font-bold text-emerald-400 uppercase">Browsing_Trade_Terminal</div>
+                           </div>
+                       </div>
                        {Object.entries(remoteUsers).map(([key, record]) => (
                            <div key={key} className="bg-[#181C25] border border-[#2B3139] p-6 rounded-[32px] space-y-4 shadow-xl">
                                <div className="flex justify-between items-start">
