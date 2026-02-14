@@ -152,8 +152,14 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
             )}
         </div>
         
-        <div className="p-4 bg-[#0B0E11] border-t border-[#2B3139] text-center">
-            <span className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.3em]">Encrypted Handshake Required</span>
+        <div className="p-4 bg-[#0B0E11] border-t border-[#2B3139] text-center space-y-2">
+            <div className="flex items-center justify-center space-x-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Mainnet_Handshake_Active</span>
+            </div>
+            <div className="text-[8px] text-gray-600 font-bold uppercase tracking-tight px-4 leading-relaxed">
+                Terminal established via real-time encrypted connection. Balances are fetched directly from the blockchain Mainnet.
+            </div>
         </div>
       </div>
     </div>
