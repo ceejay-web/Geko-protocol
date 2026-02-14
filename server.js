@@ -2,11 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLtopath } from 'url';
+import { env } from 'process';
 
 dotenv.config();
 
 const app = express();
-const port = 5000;
+const port = process.env.port|| 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -14,6 +17,8 @@ app.use(express.json());
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 });
+const __filename = fileURLTopath(import.meta.url);
+const_dirname = path.dirname(__filename)
 
 // Symbol Mapping for CoinCap
 const ASSET_ID_MAP = {
