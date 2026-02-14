@@ -15,6 +15,41 @@ interface AdminDeskProps {
 const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTrades, onForceOutcome, onUpdateWallet }) => {
   const [activeTab, setActiveTab] = useState<'intercept' | 'withdrawals' | 'users' | 'config'>('intercept');
   const [remoteUsers, setRemoteUsers] = useState<Record<string, UserRecord>>({});
+  const [dbUsers, setDbUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDbUsers = async () => {
+      try {
+        const res = await fetch('/api/admin/users');
+        if (res.ok) {
+          const data = await res.json();
+          setDbUsers(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch DB users', e);
+      }
+    };
+    fetchDbUsers();
+    const interval = setInterval(fetchDbUsers, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleUpdateUser = async (id: number, newData: any) => {
+    try {
+      const res = await fetch('/api/admin/users/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, wallet_data: newData })
+      });
+      if (res.ok) {
+        const updateRes = await fetch('/api/admin/users');
+        const data = await updateRes.json();
+        setDbUsers(data);
+      }
+    } catch (e) {
+      console.error('Update failed', e);
+    }
+  };
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   const realUserTrades = useMemo(() => {
@@ -195,7 +230,40 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                <div className="space-y-6">
                    <h2 className="text-lg font-black uppercase italic text-indigo-400 px-4">Registry Explorer</h2>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                       {/* Active Session Simulation for Live Monitoring */}
+                       {/* Registered Database Users */}
+                       {dbUsers.map((user) => (
+                           <div key={user.id} className="bg-[#181C25] border border-indigo-500/30 p-6 rounded-[32px] space-y-4 shadow-xl">
+                               <div className="flex justify-between items-start">
+                                   <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center text-indigo-400 font-black">
+                                       @
+                                   </div>
+                                   <div className="text-[8px] text-gray-500 uppercase font-black">DB_ID: {user.id}</div>
+                               </div>
+                               <div>
+                                   <div className="text-sm font-bold text-gray-200 truncate">{user.email}</div>
+                                   <div className="text-[9px] text-gray-500 font-mono mt-1">Status: Registered</div>
+                               </div>
+                               <div className="bg-[#0B0E11] p-3 rounded-2xl border border-[#2B3139]">
+                                   <div className="text-[8px] text-gray-600 uppercase font-black">Manual Balance Adjustment</div>
+                                   <div className="mt-2 flex space-x-2">
+                                       <input 
+                                           type="text"
+                                           placeholder="New Balance"
+                                           className="bg-transparent border border-gray-800 rounded px-2 py-1 text-xs text-emerald-400 w-full"
+                                           onKeyDown={(e) => {
+                                               if (e.key === 'Enter') {
+                                                   const val = (e.target as HTMLInputElement).value;
+                                                   const updated = { ...user.wallet_data, balances: [{ symbol: 'USDT', name: 'Tether', valueUsd: val }] };
+                                                   handleUpdateUser(user.id, updated);
+                                               }
+                                           }}
+                                       />
+                                   </div>
+                               </div>
+                               <div className="text-[8px] text-gray-600 uppercase italic">Press Enter to save changes</div>
+                           </div>
+                       ))}
+                       {/* Live Monitoring Section */}
                        <div className="bg-[#181C25] border border-emerald-500/30 p-6 rounded-[32px] space-y-4 shadow-xl relative overflow-hidden">
                            <div className="absolute top-0 right-0 p-4">
                                <div className="flex items-center space-x-1">

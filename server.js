@@ -3,13 +3,13 @@ import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLtopath } from 'url';
+import { fileURLToPath } from 'url';
 import { env } from 'process';
 
 dotenv.config();
 
 const app = express();
-const port = process.env.port|| 5000;
+const port = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
@@ -17,8 +17,8 @@ app.use(express.json());
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 });
-const __filename = fileURLTopath(import.meta.url);
-const_dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Symbol Mapping for CoinCap
 const ASSET_ID_MAP = {
@@ -147,6 +147,25 @@ app.post('/api/auth/login', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message || 'Auth error' });
+  }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, wallet_data FROM users ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/users/update', async (req, res) => {
+  const { id, wallet_data } = req.body;
+  try {
+    await pool.query('UPDATE users SET wallet_data = $1 WHERE id = $2', [JSON.stringify(wallet_data), id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
