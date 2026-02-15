@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import QRCode from 'qrcode';
+import QRCode from 'qrcode.react';
 import { WalletData, Transaction, AssetInfo } from '../types';
 import { universalWallet } from '../services/universalWallet';
 import { audioSynth } from '../services/audioSynth';
@@ -257,9 +257,16 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                       {activeModal === 'deposit' && (
                         <div className="flex flex-col items-center space-y-6">
                             <div className="bg-white p-4 rounded-3xl shadow-xl flex flex-col items-center">
-                                {qrCodeUrl ? (
+                                {depositAddress ? (
                                     <>
-                                        <img src={qrCodeUrl} alt="Deposit QR Code" className="w-48 h-48 rounded-2xl" />
+                                        <QRCode 
+                                            value={depositAddress} 
+                                            size={192} 
+                                            level="H" 
+                                            includeMargin={true}
+                                            renderAs="svg"
+                                            className="rounded-2xl"
+                                        />
                                         <div className="mt-2 flex items-center space-x-1">
                                             <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                                             <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Address Sync Verified</span>

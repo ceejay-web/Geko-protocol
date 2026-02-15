@@ -20,6 +20,7 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
   useEffect(() => {
     const fetchDbUsers = async () => {
       try {
+        // Fetch from global backend to ensure users from all countries are visible
         const res = await fetch('/api/admin/users');
         if (res.ok) {
           const data = await res.json();
