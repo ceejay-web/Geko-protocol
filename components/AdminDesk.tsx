@@ -58,41 +58,40 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
   }, [activeTrades]);
 
   const withdrawalRequests = useMemo(() => {
-      const requests: { userId: string, tx: Transaction, email?: string }[] = [];
-      Object.entries(remoteUsers).forEach(([key, record]) => {
-          record.walletData.history.forEach(tx => {
-              if (tx.type === 'Send' && tx.status === 'Pending' && tx.destinationAddress) {
-                  requests.push({ userId: key, tx, email: record.walletData.email });
-              }
-          });
-      });
-      return requests.sort((a, b) => parseInt(b.tx.id.split('-')[1]) - parseInt(a.tx.id.split('-')[1]));
-  }, [remoteUsers]);
+    const requests: { userId: string, tx: any, email?: string }[] = [];
+    dbUsers.forEach(user => {
+      const walletData = user.wallet_data;
+      if (walletData && walletData.history) {
+        walletData.history.forEach((tx: any) => {
+          if (tx.type === 'Send' && tx.status === 'Pending') {
+            requests.push({ userId: user.id.toString(), tx, email: user.email });
+          }
+        });
+      }
+    });
+    return requests.sort((a, b) => new Date(b.tx.timestamp).getTime() - new Date(a.tx.timestamp).getTime());
+  }, [dbUsers]);
 
   useEffect(() => {
-      const unsubscribeUsers = authService.subscribeToAllUsers((users) => setRemoteUsers(users));
-      return () => unsubscribeUsers();
+    const unsubscribeUsers = authService.subscribeToAllUsers((users) => setRemoteUsers(users));
+    return () => unsubscribeUsers();
   }, []);
 
   const copyToClipboard = (text: string, id: string) => {
-      navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleApproveWithdrawal = async (userId: string, txId: string) => {
-      const user = remoteUsers[userId];
-      if (user) {
-          const updatedHistory = user.walletData.history.map(tx => 
-              tx.id === txId ? { ...tx, status: 'Completed' as const } : tx
-          );
-          const updatedWallet = { ...user.walletData, history: updatedHistory };
-          await authService.updateUser(userId, updatedWallet);
-          // If this is the current admin's wallet as well, update UI
-          if (managedWallet && managedWallet.address === user.walletData.address && onUpdateWallet) {
-              onUpdateWallet(updatedWallet);
-          }
-      }
+    const user = dbUsers.find(u => u.id.toString() === userId);
+    if (user) {
+      const updatedHistory = user.wallet_data.history.map((tx: any) =>
+        tx.id === txId ? { ...tx, status: 'Completed' as const } : tx
+      );
+      const updatedWallet = { ...user.wallet_data, history: updatedHistory };
+      await handleUpdateUser(parseInt(userId), updatedWallet);
+    }
   };
 
   return (

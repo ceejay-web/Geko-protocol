@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { WalletData, Transaction, AssetInfo } from '../types';
 import { universalWallet } from '../services/universalWallet';
 import { audioSynth } from '../services/audioSynth';
@@ -259,12 +259,11 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                             <div className="bg-white p-4 rounded-3xl shadow-xl flex flex-col items-center">
                                 {depositAddress ? (
                                     <>
-                                        <QRCode 
+                                        <QRCodeSVG 
                                             value={depositAddress} 
                                             size={192} 
                                             level="H" 
                                             includeMargin={true}
-                                            renderAs="svg"
                                             className="rounded-2xl"
                                         />
                                         <div className="mt-2 flex items-center space-x-1">
