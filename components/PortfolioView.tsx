@@ -32,31 +32,15 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
   const [gasPrice, setGasPrice] = useState(24);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
 
-  const [simulatedYield, setSimulatedYield] = useState(0);
-  const lastUpdateTime = useRef(Date.now());
-  
-  useEffect(() => {
-    const int = setInterval(() => setGasPrice(prev => Math.max(12, prev + (Math.random() * 4 - 2))), 5000);
-    return () => clearInterval(int);
-  }, []);
+    const [simulatedYield, setSimulatedYield] = useState(0);
+    const lastUpdateTime = useRef(Date.now());
+    
+    useEffect(() => {
+      const int = setInterval(() => setGasPrice(prev => Math.max(12, prev + (Math.random() * 4 - 2))), 5000);
+      return () => clearInterval(int);
+    }, []);
 
-  // Generate real QR code when deposit address changes or modal opens
-  useEffect(() => {
-    if (activeModal === 'deposit' && depositAddress) {
-      QRCode.toDataURL(depositAddress, {
-        width: 400,
-        margin: 2,
-        color: {
-          dark: '#0B0E11',
-          light: '#FFFFFF',
-        }
-      })
-      .then(url => setQrCodeUrl(url))
-      .catch(err => console.error("QR Error:", err));
-    }
-  }, [activeModal, depositAddress]);
-
-  const equityBalance = useMemo(() => {
+    const equityBalance = useMemo(() => {
     if (!wallet || !wallet.protocolBalances) return 0;
     return wallet.protocolBalances.reduce((acc, curr) => acc + parseFloat(curr.valueUsd.replace(/,/g, '')), 0);
   }, [wallet]);
