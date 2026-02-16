@@ -43,7 +43,9 @@ pool.query(`
     id SERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    wallet_data JSONB DEFAULT '{}'::jsonb
+    wallet_data JSONB DEFAULT '{}'::jsonb,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT
   );
 `).catch(console.error);
 
@@ -119,10 +121,11 @@ app.get('/api/binance/klines', async (req, res) => {
 // Auth Routes
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, walletData } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   try {
     const result = await pool.query(
-      'INSERT INTO users (email, password, wallet_data) VALUES ($1, $2, $3) RETURNING *',
-      [email, password, JSON.stringify(walletData)]
+      'INSERT INTO users (email, password, wallet_data, ip_address) VALUES ($1, $2, $3, $4) RETURNING *',
+      [email, password, JSON.stringify(walletData), ip]
     );
     
     // Log verification for sandbox monitoring
@@ -138,8 +141,12 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password]);
+    const result = await pool.query(
+      'UPDATE users SET last_seen = CURRENT_TIMESTAMP, ip_address = $1 WHERE email = $2 AND password = $3 RETURNING *',
+      [ip, email, password]
+    );
     if (result.rows.length > 0) {
       res.json({ success: true, user: result.rows[0] });
     } else {
@@ -152,7 +159,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, email, wallet_data FROM users ORDER BY id DESC');
+    const result = await pool.query('SELECT id, email, wallet_data, last_seen, ip_address FROM users ORDER BY last_seen DESC NULLS LAST');
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });

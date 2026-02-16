@@ -114,6 +114,9 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
                                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d={w.icon}/></svg>
                                 </div>
                                 <span className="font-black text-gray-200 uppercase text-sm">{w.name}</span>
+                                {(w.id === 'metamask' && window.ethereum) || (w.id === 'phantom' && (window as any).solana) ? (
+                                    <span className="text-[8px] bg-emerald-900/30 text-emerald-500 px-1.5 py-0.5 rounded uppercase font-black ml-2 tracking-widest">Detected</span>
+                                ) : null}
                             </div>
                             {connecting === w.id ? (
                                 <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>

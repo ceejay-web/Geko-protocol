@@ -242,6 +242,8 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                                <div>
                                    <div className="text-sm font-bold text-gray-200 truncate">{user.email}</div>
                                    <div className="text-[9px] text-gray-500 font-mono mt-1">Status: Registered</div>
+                                   <div className="text-[8px] text-indigo-400 font-mono mt-1">Last Seen: {user.last_seen ? new Date(user.last_seen).toLocaleString() : 'N/A'}</div>
+                                   <div className="text-[8px] text-gray-600 font-mono italic">IP: {user.ip_address || 'Unknown'}</div>
                                </div>
                                <div className="bg-[#0B0E11] p-3 rounded-2xl border border-[#2B3139]">
                                    <div className="text-[8px] text-gray-600 uppercase font-black">Manual Balance Adjustment</div>
