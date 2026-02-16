@@ -167,8 +167,12 @@ app.post('/api/admin/users/update', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+ // This handles the home page (the "/" path)
+app.get('/', (req, res) => {
+  res.send('<h1>Geko Protocol Server is Live!</h1><p>The backend is running successfully.</p>');
 });
 
-app.listen(port, '0.0.0.0', () => {
+  app.listen(port, '0.0.0.0', () => {
   console.log(`Backend running on port ${port}`);
 });
+  
