@@ -15,7 +15,10 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       allowedHosts: true,
       proxy: {
-        '/api': 'http://0.0.0.0:5001'
+        '/api': {
+          target: 'http://0.0.0.0:5001',
+          changeOrigin: true
+        }
       }
     },
     build: {
