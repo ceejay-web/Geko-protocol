@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       allowedHosts: true,
       proxy: {
-        '/api': 'http://localhost:5001'
+        '/api': 'http://0.0.0.0:5001'
       }
     },
     build: {

