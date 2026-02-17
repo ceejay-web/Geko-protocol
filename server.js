@@ -4,21 +4,31 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { env } from 'process';
 
 dotenv.config();
 
-const app = express();
-const port = process.env.PORT || 5001;
-
-app.use(cors());
-app.use(express.json());
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+// Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const app = express();
+const port = process.env.PORT || 5001;
+const { Pool } = pg;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname,)));
+// Serve Frontend Files
+// Make sure your folder is actually named 'public' in the sidebar!
+
+
+// API Routes would go here (your pool.query stuff, etc.)
 
 // Symbol Mapping for CoinCap
 const ASSET_ID_MAP = {
@@ -173,13 +183,13 @@ app.post('/api/admin/users/update', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
+  
+  });
+// The Catch-all (This MUST be below your API routes but above app.listen)
+app.get('*', (req, res) => {})
+  res.sendfile(join(__dirname, 'public',))
+        
 
-// This handles the home page (the "/" path)
-app.get('/', (req, res) => {
-  res.send('<h1>Geko Protocol Server is Live!</h1><p>The backend is running successfully.</p>');
-});
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Backend running on port ${port}`);
