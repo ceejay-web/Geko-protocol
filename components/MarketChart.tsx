@@ -140,37 +140,33 @@ const MarketChart: React.FC<MarketChartProps> = ({ data, symbol, activeTrade, on
             priceScaleId: '', 
         });
         volumeSeries.priceScale().applyOptions({
-            scaleMargins: { top: 0.85, bottom: 0 },
+            scaleMargins: { top: 0.8, bottom: 0 },
         });
         volumeSeriesRef.current = volumeSeries;
-    } else {
-        volumeSeriesRef.current = null;
     }
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#10b981', // emerald-500
-      downColor: '#ef4444', // rose-500
+      upColor: '#10b981',
+      downColor: '#ef4444',
       borderVisible: false,
       wickUpColor: '#10b981',
       wickDownColor: '#ef4444',
     });
 
     const ema20Series = chart.addSeries(LineSeries, {
-      color: '#3b82f6', // blue-500
+      color: '#3b82f6',
       lineWidth: 1,
       crosshairMarkerVisible: false,
       priceLineVisible: false,
       title: 'EMA 20',
-      visible: showIndicators,
     });
 
     const ema50Series = chart.addSeries(LineSeries, {
-      color: '#f97316', // orange-500
+      color: '#f97316',
       lineWidth: 1,
       crosshairMarkerVisible: false,
       priceLineVisible: false,
       title: 'EMA 50',
-      visible: showIndicators,
     });
 
     // Store refs
@@ -291,15 +287,11 @@ const MarketChart: React.FC<MarketChartProps> = ({ data, symbol, activeTrade, on
         };
 
         const isLong = activeTrade.direction === 'up';
-        const entryPrice = activeTrade.entryPrice;
-        
-        const tpPrice = activeTrade.takeProfit || (isLong ? entryPrice * 1.04 : entryPrice * 0.96);
-
-        // Entry and Stop Loss marks
+        // Entry, Stop Loss, and Take Profit lines
         createLine(entryPrice, 'entry', '#3b82f6', false);
         const slPrice = activeTrade.stopLoss || (isLong ? entryPrice * 0.98 : entryPrice * 1.02);
         createLine(slPrice, 'stop-loss', '#ef4444', true);
-        
+        const tpPrice = activeTrade.takeProfit || (isLong ? entryPrice * 1.04 : entryPrice * 0.96);
         createLine(tpPrice, 'take-profit', '#10b981', true);
     }
   }, [activeTrade]);

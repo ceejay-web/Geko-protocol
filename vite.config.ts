@@ -16,14 +16,15 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       proxy: {
         '/api': {
-          target: 'http://0.0.0.0:5001',
+          target: 'http://0.0.0.0:5000',
           changeOrigin: true
         }
       }
     },
     build: {
       target: 'esnext',
-      outDir: 'dist'
+      outDir: 'dist',
+      emptyOutDir: true
     }
   };
 });

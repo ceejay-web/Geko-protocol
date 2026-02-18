@@ -75,15 +75,27 @@ export const universalWallet = {
     fetchAddressBalance: async (address: string): Promise<{ symbol: string, amount: string, valueUsd: string }[]> => {
         const balances: { symbol: string, amount: string, valueUsd: string }[] = [];
         
-        // Ensure we always return at least a placeholder to signal successful handshake
         const finalizeBalances = (detectedBalances: { symbol: string, amount: string, valueUsd: string }[]) => {
             if (detectedBalances.length > 0) return detectedBalances;
             return [{ symbol: 'USDT', amount: '0.00', valueUsd: '0.00' }];
         };
 
-        // EVM Detection (ETH, BSC, Polygon)
+        const fetchPrices = async () => {
+            try {
+                const res = await fetch('/api/binance/prices');
+                return res.ok ? await res.json() : [];
+            } catch { return []; }
+        };
+
+        // EVM Detection
         if (/^0x[a-fA-F0-9]{40}$/.test(address)) {
-            const fetchChainBalance = async (url: string, symbol: string, price: number) => {
+            const priceData = await fetchPrices();
+            const getPrice = (sym: string) => {
+                const found = priceData.find((p: any) => p.symbol === `${sym}USDT`);
+                return found ? parseFloat(found.lastPrice) : (sym === 'ETH' ? 2600 : 580);
+            };
+
+            const fetchChain = async (url: string, symbol: string) => {
                 try {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -93,31 +105,20 @@ export const universalWallet = {
                     const data = await response.json();
                     if (data.result) {
                         const amt = formatBalance(data.result, 18);
-                        const usd = (parseFloat(amt.replace(/,/g, '')) * price).toFixed(2);
-                        if (parseFloat(amt.replace(/,/g, '')) > 0) {
-                            balances.push({ symbol, amount: amt, valueUsd: usd });
-                        }
+                        const price = getPrice(symbol);
+                        balances.push({ symbol, amount: amt, valueUsd: (parseFloat(amt.replace(/,/g, '')) * price).toFixed(2) });
                     }
-                } catch (e) { }
-            };
-
-            // Fetch dynamic prices from our proxy with cache busting
-            const priceResponse = await fetch(`/api/binance/prices?t=${Date.now()}`).catch(() => null);
-            const priceData = priceResponse && priceResponse.ok ? await priceResponse.json() : [];
-            const getPrice = (sym: string, def: number) => {
-                const found = priceData.find((p: any) => p.symbol === `${sym}USDT`);
-                return found ? parseFloat(found.lastPrice) : def;
+                } catch (e) { console.error(`${symbol} RPC Error`, e); }
             };
 
             await Promise.all([
-                fetchChainBalance(RPC_PROVIDERS.ETH, 'ETH', getPrice('ETH', 2950)),
-                fetchChainBalance(RPC_PROVIDERS.BSC, 'BNB', getPrice('BNB', 590)),
-                fetchChainBalance(RPC_PROVIDERS.MATIC, 'MATIC', getPrice('MATIC', 0.42))
+                fetchChain(RPC_PROVIDERS.ETH, 'ETH'),
+                fetchChain(RPC_PROVIDERS.BSC, 'BNB'),
+                fetchChain(RPC_PROVIDERS.MATIC, 'MATIC')
             ]);
-
             return finalizeBalances(balances);
         }
-        
+
         // Solana Detection
         if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
             try {
@@ -128,13 +129,12 @@ export const universalWallet = {
                 });
                 const data = await response.json();
                 if (data.result?.value !== undefined) {
-                    const solAmt = parseFloat(formatBalance(data.result.value, 9).replace(/,/g, ''));
-                    const priceResponse = await fetch('/api/binance/prices').catch(() => null);
-                    const priceData = priceResponse && priceResponse.ok ? await priceResponse.json() : [];
-                    const solPrice = priceData.find((p: any) => p.symbol === 'SOLUSDT')?.lastPrice || 165;
-                    balances.push({ symbol: 'SOL', amount: solAmt.toFixed(2), valueUsd: (solAmt * parseFloat(solPrice as string)).toFixed(2) });
+                    const priceData = await fetchPrices();
+                    const solPrice = parseFloat(priceData.find((p: any) => p.symbol === 'SOLUSDT')?.lastPrice || '165');
+                    const amt = parseFloat(formatBalance(data.result.value, 9).replace(/,/g, ''));
+                    balances.push({ symbol: 'SOL', amount: amt.toFixed(2), valueUsd: (amt * solPrice).toFixed(2) });
                 }
-            } catch (e) { }
+            } catch (e) { console.error('Solana RPC Error', e); }
             return finalizeBalances(balances);
         }
 
