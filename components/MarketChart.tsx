@@ -159,6 +159,7 @@ const MarketChart: React.FC<MarketChartProps> = ({ data, symbol, activeTrade, on
       crosshairMarkerVisible: false,
       priceLineVisible: false,
       title: 'EMA 20',
+      visible: true,
     });
 
     const ema50Series = chart.addSeries(LineSeries, {
@@ -167,6 +168,7 @@ const MarketChart: React.FC<MarketChartProps> = ({ data, symbol, activeTrade, on
       crosshairMarkerVisible: false,
       priceLineVisible: false,
       title: 'EMA 50',
+      visible: true,
     });
 
     // Store refs

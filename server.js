@@ -36,7 +36,6 @@ pool.query(`
   );
 `).catch(console.error);
 
-// ASSET_ID_MAP
 const ASSET_ID_MAP = {
     'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOT': 'polkadot',
     'USDT': 'tether', 'BNB': 'binance-coin', 'XRP': 'xrp', 'ADA': 'cardano',
@@ -44,7 +43,6 @@ const ASSET_ID_MAP = {
     'LINK': 'chainlink', 'KSM': 'kusama'
 };
 
-// API
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 app.get('/api/binance/prices', async (req, res) => {
@@ -126,11 +124,9 @@ app.post('/api/admin/users/update', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// Serve frontend assets
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-// Unified Catch-all
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({error: 'Not found'});
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
