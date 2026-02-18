@@ -40,7 +40,18 @@ const App: React.FC = () => {
   
   const [adminDeskOpen, setAdminDeskOpen] = useState(false);
   const [adminTaps, setAdminTaps] = useState(0);
-  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(null);
+  const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(() => {
+    const saved = localStorage.getItem('geko_session');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (wallet) {
+      localStorage.setItem('geko_session', JSON.stringify(wallet));
+    } else {
+      localStorage.removeItem('geko_session');
+    }
+  }, [wallet]);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   
@@ -48,6 +59,27 @@ const App: React.FC = () => {
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   const isConnected = !!wallet;
+
+  // Admin Balance Sync - Fetch latest data from DB for the current user
+  useEffect(() => {
+    if (!wallet?.email) return;
+    const syncWithDb = async () => {
+      try {
+        const res = await fetch(`/api/user/data?email=${encodeURIComponent(wallet.email)}`);
+        if (res.ok) {
+          const latestWalletData = await res.json();
+          // Only update if balances actually changed to avoid render loops
+          if (JSON.stringify(latestWalletData.balances) !== JSON.stringify(wallet.balances)) {
+            setWallet(prev => prev ? { ...prev, ...latestWalletData } : null);
+          }
+        }
+      } catch (e) {
+        console.error('DB Sync Error:', e);
+      }
+    };
+    const interval = setInterval(syncWithDb, 3000);
+    return () => clearInterval(interval);
+  }, [wallet?.email, wallet?.balances]);
 
   const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
 

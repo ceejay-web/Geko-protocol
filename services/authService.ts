@@ -125,7 +125,13 @@ export const authService = {
       result = { success: false, error: 'Malformed server response' };
     }
     if (!result.success) throw new Error(result.error || "Invalid credentials");
-    const walletData = result.user.wallet_data;
+    
+    // Return the user with their wallet data from DB
+    const walletData = { 
+      ...result.user.wallet_data, 
+      email: result.user.email,
+      id: result.user.id 
+    };
     await authService.saveSession(walletData);
     return walletData;
   },

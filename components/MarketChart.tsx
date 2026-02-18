@@ -295,7 +295,11 @@ const MarketChart: React.FC<MarketChartProps> = ({ data, symbol, activeTrade, on
         
         const tpPrice = activeTrade.takeProfit || (isLong ? entryPrice * 1.04 : entryPrice * 0.96);
 
-        // Entry and Stop Loss marks removed as per user request.
+        // Entry and Stop Loss marks
+        createLine(entryPrice, 'entry', '#3b82f6', false);
+        const slPrice = activeTrade.stopLoss || (isLong ? entryPrice * 0.98 : entryPrice * 1.02);
+        createLine(slPrice, 'stop-loss', '#ef4444', true);
+        
         createLine(tpPrice, 'take-profit', '#10b981', true);
     }
   }, [activeTrade]);
