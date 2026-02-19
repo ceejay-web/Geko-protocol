@@ -148,13 +148,14 @@ app.post('/api/admin/users/update', async (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
+// Unified Catch-all
 app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
-    res.sendFile(path.join(distPath, 'index.html'), (err) => {
-      if (err) res.sendFile(path.join(__dirname, 'index.html'));
-    });
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) res.sendFile(path.join(__dirname, 'index.html'));
+  });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Unified Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
