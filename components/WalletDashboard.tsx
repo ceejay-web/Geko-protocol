@@ -16,6 +16,23 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ wallet, onClose, onDi
   const protocolValue = (wallet.protocolBalances || []).reduce((acc, curr) => acc + parseFloat(curr.valueUsd.replace(/,/g, '')), 0);
   const totalValue = externalValue + protocolValue;
 
+    const [vaultBalance, setVaultBalance] = useState("25,000.00");
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch('/api/config');
+                if (res.ok) {
+                    const config = await res.json();
+                    if (config.vault_balance) setVaultBalance(config.vault_balance);
+                }
+            } catch (e) {}
+        };
+        fetchConfig();
+        const interval = setInterval(fetchConfig, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
   const isSimulation = wallet.source === 'simulation' || wallet.source === 'WalletConnect' || wallet.isDelegated;
 
   // Dynamic Identity Logic

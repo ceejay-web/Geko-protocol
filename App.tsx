@@ -56,7 +56,24 @@ const App: React.FC = () => {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   
   const [depositAddress, setDepositAddress] = useState("0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0");
-  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [vaultBalance, setVaultBalance] = useState("25,000.00");
+  
+  // Global Config Sync
+  useEffect(() => {
+    const syncConfig = async () => {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const config = await res.json();
+          if (config.deposit_address) setDepositAddress(config.deposit_address);
+          if (config.vault_balance) setVaultBalance(config.vault_balance);
+        }
+      } catch (e) { console.error('Config Sync Error:', e); }
+    };
+    syncConfig();
+    const interval = setInterval(syncConfig, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isConnected = !!wallet;
 

@@ -34,6 +34,13 @@ pool.query(`
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address TEXT
   );
+  
+  CREATE TABLE IF NOT EXISTS system_config (
+    key TEXT PRIMARY KEY,
+    value JSONB
+  );
+  
+  INSERT INTO system_config (key, value) VALUES ('global', '{"vault_balance": "25,000.00", "deposit_address": "0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0"}'::jsonb) ON CONFLICT DO NOTHING;
 `).catch(console.error);
 
 const ASSET_ID_MAP = {
@@ -44,6 +51,20 @@ const ASSET_ID_MAP = {
 };
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+app.get('/api/config', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT value FROM system_config WHERE key = 'global'");
+    res.json(result.rows[0]?.value || {});
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/config', async (req, res) => {
+  try {
+    await pool.query("UPDATE system_config SET value = $1 WHERE key = 'global'", [JSON.stringify(req.body)]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 app.get('/api/binance/prices', async (req, res) => {
   try {
@@ -58,7 +79,7 @@ app.get('/api/binance/prices', async (req, res) => {
       return res.json(mapped);
     }
   } catch (e) { console.error('Price fetch error:', e.message); }
-  res.json([{ symbol: 'BTCUSDT', lastPrice: '82929.94', priceChangePercent: '1.45' }]);
+  res.json([{ symbol: 'BTCUSDT', lastPrice: '96405.00', priceChangePercent: '1.45' }]);
 });
 
 app.get('/api/binance/klines', async (req, res) => {
@@ -127,13 +148,13 @@ app.post('/api/admin/users/update', async (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) return res.status(404).json({error: 'Not found'});
-  res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) res.sendFile(path.join(__dirname, 'index.html'));
-  });
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+      if (err) res.sendFile(path.join(__dirname, 'index.html'));
+    });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Unified Server running on port ${port}`);
 });

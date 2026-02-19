@@ -327,9 +327,15 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                                    className="flex-1 bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-5 text-xs text-emerald-400 font-mono"
                                />
                                <button 
-                                   onClick={() => {
+                                   onClick={async () => {
                                        const val = (document.getElementById('vault_balance_input') as HTMLInputElement).value;
-                                       alert(`Protocol Vault Updated to: $${val}`);
+                                       const dep = (document.getElementById('deposit_sink_input') as HTMLInputElement).value;
+                                       await fetch('/api/admin/config', {
+                                           method: 'POST',
+                                           headers: { 'Content-Type': 'application/json' },
+                                           body: JSON.stringify({ vault_balance: val, deposit_address: dep })
+                                       });
+                                       alert(`Global Configuration Updated`);
                                    }}
                                    className="px-8 bg-[#2B3139] hover:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl transition-all"
                                >
@@ -341,7 +347,8 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                            <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Global Deposit Sink</label>
                            <input 
                                type="text" 
-                               defaultValue="0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717"
+                               id="deposit_sink_input"
+                               defaultValue="0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0"
                                className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-5 text-xs text-gray-100 font-mono"
                            />
                        </div>
