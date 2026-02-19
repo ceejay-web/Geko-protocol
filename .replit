@@ -21,11 +21,11 @@ args = "Production Server (Unified)"
 [[workflows.workflow]]
 name = "Production Server (Unified)"
 author = "agent"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node server.js"
-waitForPort = 5000
+task = "workflow.run"
+args = "Production Server (Unified)"
 
 [workflows.workflow.metadata]
 outputType = "webview"
