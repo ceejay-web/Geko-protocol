@@ -59,8 +59,15 @@ const GraphsView: React.FC<GraphsViewProps> = ({ assets, selectedAsset, marketDa
           </div>
         </div>
 
-        <div className="flex-1 w-full min-h-[500px]">
-           <MarketChart data={marketData} symbol={selectedAsset.symbol} showVolume={false} />
+        <div className="flex-1 w-full min-h-[500px] relative">
+           {marketData.length > 0 ? (
+             <MarketChart data={marketData} symbol={selectedAsset.symbol} showVolume={false} />
+           ) : (
+             <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em]">Synchronizing_Chart_Data...</p>
+             </div>
+           )}
         </div>
 
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">

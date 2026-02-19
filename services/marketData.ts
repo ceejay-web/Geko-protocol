@@ -58,8 +58,7 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
-    // Attempt multi-source price fetch via our secure backend proxy
-    const response = await fetch(`/api/binance/prices`);
+    const response = await fetch(`/api/binance/prices?cb=${Date.now()}`);
     if (response.ok) {
         const data = await response.json();
         const results: Record<string, { price: number, change: number }> = {};
@@ -70,10 +69,10 @@ export async function fetchRealPrices(): Promise<Partial<Record<string, { price:
                 change: parseFloat(item.priceChangePercent)
             };
         });
-        return results;
+        if (Object.keys(results).length > 0) return results;
     }
   } catch (e) {
-    console.warn('Primary price feed disconnected, attempting fallback...');
+    console.warn('Primary price feed disconnected');
   }
 
   try {

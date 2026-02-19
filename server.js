@@ -132,8 +132,11 @@ app.get('/api/user/data', async (req, res) => {
   const { email } = req.query;
   try {
     const result = await pool.query('SELECT wallet_data FROM users WHERE email = $1', [email]);
-    if (result.rows.length > 0) res.json(result.rows[0].wallet_data);
-    else res.status(404).json({ error: 'User not found' });
+    if (result.rows.length > 0) {
+      res.json(result.rows[0].wallet_data);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -148,14 +151,23 @@ app.post('/api/admin/users/update', async (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-// Unified Catch-all
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
+// Standard SPA catch-all - robust error handling
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) res.sendFile(path.join(__dirname, 'index.html'));
+    if (err) {
+      // Fallback for direct development mode if dist is missing
+      res.sendFile(path.join(__dirname, 'index.html'), (err2) => {
+        if (err2) {
+          res.status(500).send("Critical System Error: index.html not found.");
+        }
+      });
+    }
   });
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Unified Server running on port ${port}`);
 });
