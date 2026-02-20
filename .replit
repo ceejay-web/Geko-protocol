@@ -42,18 +42,18 @@ outputType = "webview"
 name = "Development Server"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
-run = ["node", "server.js"]
+build = ["npm run build"]
+run = ["node server.js"]
 
 [[ports]]
 localPort = 5000
