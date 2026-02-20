@@ -19,20 +19,20 @@ const ASSET_ID_MAP: Record<string, string> = {
     'KSM': 'kusama'
 };
 
-// Base prices for simulation fallback (updated with February 11, 2026 market values)
+// Base prices for simulation fallback (updated with February 20, 2026 market values)
 const BASE_PRICES: Record<string, number> = {
-    'BTC': 66986.00,
-    'ETH': 1949.00,
-    'SOL': 84.20,
-    'DOT': 4.80,
-    'KSM': 28.5,
+    'BTC': 96405.00,
+    'ETH': 2750.00,
+    'SOL': 185.20,
+    'DOT': 7.80,
+    'KSM': 35.5,
     'USDT': 1.00,
-    'BNB': 540,
-    'XRP': 0.72,
-    'ADA': 0.45,
-    'AVAX': 28.5,
-    'LINK': 14.2,
-    'MATIC': 0.35
+    'BNB': 640,
+    'XRP': 2.72,
+    'ADA': 1.15,
+    'AVAX': 42.5,
+    'LINK': 24.2,
+    'MATIC': 0.55
 };
 
 const generateMockCandles = (symbol: string, count: number = 100): MarketData[] => {

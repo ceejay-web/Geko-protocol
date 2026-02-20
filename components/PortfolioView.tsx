@@ -30,7 +30,13 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [gasPrice, setGasPrice] = useState(24);
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  
+  // Real-time address sync from config
+  const [currentDepositAddress, setCurrentDepositAddress] = useState(depositAddress);
+
+  useEffect(() => {
+    setCurrentDepositAddress(depositAddress);
+  }, [depositAddress]);
 
     const [simulatedYield, setSimulatedYield] = useState(0);
     const lastUpdateTime = useRef(Date.now());
@@ -153,7 +159,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
   };
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(depositAddress);
+    navigator.clipboard.writeText(currentDepositAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -241,10 +247,10 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                       {activeModal === 'deposit' && (
                         <div className="flex flex-col items-center space-y-6">
                             <div className="bg-white p-4 rounded-3xl shadow-xl flex flex-col items-center">
-                                {depositAddress ? (
+                                {currentDepositAddress ? (
                                     <>
                                         <QRCodeSVG 
-                                            value={depositAddress} 
+                                            value={currentDepositAddress} 
                                             size={192} 
                                             level="H" 
                                             includeMargin={true}
@@ -265,7 +271,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                                <div className="space-y-2">
                                   <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Vault Destination</label>
                                   <div className="flex items-center space-x-3 bg-[#0B0E11] p-5 rounded-3xl border border-[#2B3139] group">
-                                     <span className="flex-1 font-mono text-[10px] text-gray-400 break-all select-all">{depositAddress}</span>
+                                     <span className="flex-1 font-mono text-[10px] text-gray-400 break-all select-all">{currentDepositAddress}</span>
                                      <button type="button" onClick={copyAddress} className="text-indigo-500 hover:text-indigo-400">
                                         {copied ? <span className="text-[8px] font-black uppercase">Copied</span> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>}
                                      </button>

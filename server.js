@@ -76,6 +76,11 @@ app.get('/api/binance/prices', async (req, res) => {
         lastPrice: asset.priceUsd,
         priceChangePercent: asset.changePercent24Hr
       }));
+      // Add KSM explicitly if not in top 100 or to ensure it matches
+      if (!mapped.find(m => m.symbol === 'KSMUSDT')) {
+        const ksm = data.data.find(a => a.symbol === 'KSM');
+        if (ksm) mapped.push({ symbol: 'KSMUSDT', lastPrice: ksm.priceUsd, priceChangePercent: ksm.changePercent24Hr });
+      }
       return res.json(mapped);
     }
   } catch (e) { console.error('Price fetch error:', e.message); }
@@ -156,16 +161,21 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
   }
-  res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) {
-      // Fallback for direct development mode if dist is missing
-      res.sendFile(path.join(__dirname, 'index.html'), (err2) => {
-        if (err2) {
-          res.status(500).send("Critical System Error: index.html not found.");
-        }
-      });
-    }
-  });
+  // For web previews on Replit, we serve from the current directory if dist is not built
+  const indexPath = path.join(distPath, 'index.html');
+  if (req.accepts('html')) {
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        res.sendFile(path.join(__dirname, 'index.html'), (err2) => {
+          if (err2) {
+            res.status(500).send("Critical System Error: index.html not found.");
+          }
+        });
+      }
+    });
+  } else {
+    res.status(404).end();
+  }
 });
 
 app.listen(port, '0.0.0.0', () => {
