@@ -19,22 +19,35 @@ task = "workflow.run"
 args = "Production Server (Unified)"
 
 [[workflows.workflow]]
-name = "Production Server (Unified)"
+name = "project"
 author = "agent"
-mode = "parallel"
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Production Server (Unified)"
+task = "packager.installForLanguage"
+args = "nodejs"
+
+[[workflows.workflow.tasks]]
+task = "packager.installForLanguage"
+args = "nodejs"
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[ports]]
-localPort = 5000
-externalPort = 80
 
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["node", "server.js"]
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[rules]
+
+[rules.formatter]
+
+[rules.formatter.fileExtensions]
+
+[rules.formatter.fileExtensions.".json"]
+id = "module:web/languageServer:typescript-language-server"
