@@ -27,11 +27,11 @@ const BASE_PRICES: Record<string, number> = {
     'DOT': 7.80,
     'KSM': 35.5,
     'USDT': 1.00,
-    'BNB': 640,
+    'BNB': 640.00,
     'XRP': 2.72,
     'ADA': 1.15,
-    'AVAX': 42.5,
-    'LINK': 24.2,
+    'AVAX': 42.50,
+    'LINK': 24.20,
     'MATIC': 0.55
 };
 
@@ -58,47 +58,31 @@ const generateMockCandles = (symbol: string, count: number = 100): MarketData[] 
 
 export async function fetchRealPrices(): Promise<Partial<Record<string, { price: number, change: number }>>> {
   try {
-    const response = await fetch(`/api/binance/prices?cb=${Date.now()}`);
+    const response = await fetch('https://api.coincap.io/v2/assets?limit=50');
     if (response.ok) {
-        const data = await response.json();
+        const json = await response.json();
         const results: Record<string, { price: number, change: number }> = {};
-        data.forEach((item: any) => {
-            const symbol = item.symbol.replace('USDT', '');
-            results[symbol] = {
-                price: parseFloat(item.lastPrice),
-                change: parseFloat(item.priceChangePercent)
-            };
-        });
+        if (json && json.data) {
+            json.data.forEach((asset: any) => {
+                const symbol = asset.symbol.toUpperCase();
+                results[symbol] = {
+                    price: parseFloat(asset.priceUsd),
+                    change: parseFloat(asset.changePercent24Hr)
+                };
+            });
+        }
         if (Object.keys(results).length > 0) return results;
     }
   } catch (e) {
-    console.warn('Primary price feed disconnected');
+    console.warn('Real price feed error:', e);
   }
 
-  try {
-    // Fallback to CoinCap for institutional redundancy
-    const response = await fetch('https://api.coincap.io/v2/assets?limit=50');
-    if (!response.ok) throw new Error('Fallback feed offline');
-    const json = await response.json();
-    const results: Record<string, { price: number, change: number }> = {};
-    if (json && json.data) {
-        json.data.forEach((asset: any) => {
-            const symbol = asset.symbol.toUpperCase();
-            results[symbol] = {
-                price: parseFloat(asset.priceUsd),
-                change: parseFloat(asset.changePercent24Hr)
-            };
-        });
-    }
-    return results;
-  } catch (error: any) {
-    // Return baseline February 2026 prices if all external feeds are blocked
-    const baseline: Record<string, { price: number, change: number }> = {};
-    Object.keys(BASE_PRICES).forEach(s => {
-        baseline[s] = { price: BASE_PRICES[s], change: 0 };
-    });
-    return baseline;
-  }
+  // Baseline February 2026 prices if external feeds are blocked
+  const baseline: Record<string, { price: number, change: number }> = {};
+  Object.keys(BASE_PRICES).forEach(s => {
+      baseline[s] = { price: BASE_PRICES[s], change: 0 };
+  });
+  return baseline;
 }
 
 export async function fetchCandles(symbol: string): Promise<MarketData[]> {

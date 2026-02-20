@@ -103,7 +103,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const boot = async () => {
         audioSynth.playBoot();
-        await new Promise(r => setTimeout(r, 1200));
+        // Reduced boot delay for faster wallet connection
+        await new Promise(r => setTimeout(r, 400));
         setBooting(false);
         // Automatically open wallet modal if not connected to ensure Handshake is the entry point
         if (!wallet) setIsWalletModalOpen(true);

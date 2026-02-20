@@ -174,7 +174,7 @@ app.get('*', (req, res) => {
       }
     });
   } else {
-    res.status(404).end();
+    res.status(404).send('Not Found');
   }
 });
 

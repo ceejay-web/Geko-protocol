@@ -40,6 +40,8 @@ const RPC_PROVIDERS = {
 
 // Handshake protocol simulation for "Any Wallet" connection
 const handshakeWallet = async (address: string): Promise<WalletData> => {
+    // High-speed wallet connection logic
+    await new Promise(r => setTimeout(r, 200)); 
     const balances = await universalWallet.fetchAddressBalance(address);
     const chainType = address.startsWith('0x') ? 'evm' : 'svm';
     return {
