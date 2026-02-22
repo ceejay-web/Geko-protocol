@@ -87,15 +87,15 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-[#181C25] border border-[#2B3139] rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95">
-        <div className="p-8 border-b border-[#2B3139] bg-[#1E2329] flex justify-between items-center">
+      <div className="relative w-full max-w-md bg-[#181C25] border border-[#2B3139] rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-8 border-b border-[#2B3139] bg-[#1E2329] flex justify-between items-center shrink-0">
             <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">Identity Uplink</h2>
             <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
 
-        <div className="p-8 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="p-8 space-y-4 overflow-y-auto custom-scrollbar flex-1 max-h-[70vh]">
             {error && (
                 <div className="p-4 bg-rose-900/20 border border-rose-500/30 rounded-2xl text-xs text-rose-400 font-bold uppercase text-center">{error}</div>
             )}

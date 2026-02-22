@@ -62,14 +62,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const syncPrices = async () => {
       try {
-        const res = await fetch('https://api.coincap.io/v2/assets?limit=50');
+        const res = await fetch('/api/binance/prices');
         if (res.ok) {
-          const json = await res.json();
+          const data = await res.json();
           const realPrices: any = {};
-          json.data.forEach((asset: any) => {
-            realPrices[asset.symbol.toUpperCase()] = {
-              price: parseFloat(asset.priceUsd),
-              change: parseFloat(asset.changePercent24Hr)
+          data.forEach((item: any) => {
+            realPrices[item.symbol.replace('USDT', '')] = {
+              price: parseFloat(item.lastPrice),
+              change: parseFloat(item.priceChangePercent)
             };
           });
           setAssets(prev => prev.map(a => {
@@ -84,41 +84,59 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Rigged Resolution Engine for User Trades
+  // Global Config Sync
   useEffect(() => {
-    const resolutionInterval = setInterval(() => {
-      const now = Date.now();
-      setActiveTrades(prev => {
-        const needsResolving = prev.filter(t => (now - t.startTime) / 1000 >= t.duration && t.status === 'pending');
-        if (needsResolving.length === 0) return prev;
-
-        return prev.map(t => {
-          if (t.status !== 'pending' || (now - t.startTime) / 1000 < t.duration) return t;
-
-          // Resolution Engine: Set outcome based on actual market movement
-          const finalStatus = t.direction === 'up' ? 'won' : 'lost';
-          
-          if (finalStatus === 'won') {
-             setNotification({ type: 'Win', msg: `ORDER CLEARED: +$${t.amount} PnL` });
-             audioSynth.playSuccess();
-          } else {
-             setNotification({ type: 'Loss', msg: `ORDER LIQUIDATED: -$${t.amount} PnL` });
-             audioSynth.playError();
-          }
-          return { ...t, status: finalStatus };
-        });
-      });
-    }, 1000);
-    return () => clearInterval(resolutionInterval);
+    const syncConfig = async () => {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const config = await res.json();
+          if (config.deposit_address) setDepositAddress(config.deposit_address);
+          if (config.vault_balance) setVaultBalance(config.vault_balance);
+        }
+      } catch (e) { console.error('Config Sync Error:', e); }
+    };
+    syncConfig();
+    const interval = setInterval(syncConfig, 5000);
+    return () => clearInterval(interval);
   }, []);
 
+  const isConnected = !!wallet;
+
+  // Admin Balance Sync - Fetch latest data from DB for the current user
   useEffect(() => {
-    const loadCandles = async () => {
-        const candles = await fetchCandles(selectedSymbol);
-        setMarketData(candles);
+    if (!wallet?.email) return;
+    const syncWithDb = async () => {
+      try {
+        const res = await fetch(`/api/user/data?email=${encodeURIComponent(wallet.email)}`);
+        if (res.ok) {
+          const latestWalletData = await res.json();
+          // Only update if balances actually changed to avoid render loops
+          if (JSON.stringify(latestWalletData.balances) !== JSON.stringify(wallet.balances)) {
+            setWallet(prev => prev ? { ...prev, ...latestWalletData } : null);
+          }
+        }
+      } catch (e) {
+        console.error('DB Sync Error:', e);
+      }
     };
-    loadCandles();
-  }, [selectedSymbol]);
+    const interval = setInterval(syncWithDb, 3000);
+    return () => clearInterval(interval);
+  }, [wallet?.email, wallet?.balances]);
+
+  const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
+
+  useEffect(() => {
+    const boot = async () => {
+        audioSynth.playBoot();
+        // Reduced boot delay for faster wallet connection
+        await new Promise(r => setTimeout(r, 400));
+        setBooting(false);
+        // Automatically open wallet modal if not connected to ensure Handshake is the entry point
+        if (!wallet) setIsWalletModalOpen(true);
+    };
+    boot();
+  }, []);
 
   const handleWalletConnect = async (data: WalletData | string, email?: string) => {
     let freshWallet: WalletData;

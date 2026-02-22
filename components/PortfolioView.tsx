@@ -50,7 +50,8 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
     const equityBalance = useMemo(() => {
     if (!wallet) return 0;
     // Controlled by Admin Desk vault_balance setting
-    return parseFloat(vaultBalance.replace(/,/g, '')) || 0;
+    const val = parseFloat(vaultBalance.replace(/,/g, ''));
+    return isNaN(val) ? 25000.00 : val;
   }, [wallet, vaultBalance]);
 
   const vipTier = useMemo(() => {

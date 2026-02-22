@@ -28,24 +28,21 @@ app.use(express.json());
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-app.get(/(.*)/, (req, res) => {
+// Standard SPA catch-all for Express 5
+app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
   }
   const indexPath = path.join(distPath, 'index.html');
-  if (req.accepts('html')) {
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        res.sendFile(path.join(__dirname, 'index.html'), (err2) => {
-          if (err2) {
-            res.status(500).send("Critical System Error: index.html not found.");
-          }
-        });
-      }
-    });
-  } else {
-    res.status(404).send('Not Found');
-  }
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.sendFile(path.join(__dirname, 'index.html'), (err2) => {
+        if (err2) {
+          res.status(500).send("Critical System Error: index.html not found.");
+        }
+      });
+    }
+  });
 });
 
 app.listen(port, '0.0.0.0', () => {
