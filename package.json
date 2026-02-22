@@ -4,10 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node server.js & vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "firebase deploy"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "vite build"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -31,3 +30,4 @@
     "vite": "^5.4.15"
   }
 }
+

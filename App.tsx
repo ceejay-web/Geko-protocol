@@ -58,71 +58,29 @@ const App: React.FC = () => {
   const [depositAddress, setDepositAddress] = useState("0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0");
   const [vaultBalance, setVaultBalance] = useState("25,000.00");
   
-  // Global Config Sync
-  useEffect(() => {
-    const syncConfig = async () => {
-      try {
-        const res = await fetch('/api/config');
-        if (res.ok) {
-          const config = await res.json();
-          if (config.deposit_address) setDepositAddress(config.deposit_address);
-          if (config.vault_balance) setVaultBalance(config.vault_balance);
-        }
-      } catch (e) { console.error('Config Sync Error:', e); }
-    };
-    syncConfig();
-    const interval = setInterval(syncConfig, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isConnected = !!wallet;
-
-  // Admin Balance Sync - Fetch latest data from DB for the current user
-  useEffect(() => {
-    if (!wallet?.email) return;
-    const syncWithDb = async () => {
-      try {
-        const res = await fetch(`/api/user/data?email=${encodeURIComponent(wallet.email)}`);
-        if (res.ok) {
-          const latestWalletData = await res.json();
-          // Only update if balances actually changed to avoid render loops
-          if (JSON.stringify(latestWalletData.balances) !== JSON.stringify(wallet.balances)) {
-            setWallet(prev => prev ? { ...prev, ...latestWalletData } : null);
-          }
-        }
-      } catch (e) {
-        console.error('DB Sync Error:', e);
-      }
-    };
-    const interval = setInterval(syncWithDb, 3000);
-    return () => clearInterval(interval);
-  }, [wallet?.email, wallet?.balances]);
-
-  const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
-
-  useEffect(() => {
-    const boot = async () => {
-        audioSynth.playBoot();
-        // Reduced boot delay for faster wallet connection
-        await new Promise(r => setTimeout(r, 400));
-        setBooting(false);
-        // Automatically open wallet modal if not connected to ensure Handshake is the entry point
-        if (!wallet) setIsWalletModalOpen(true);
-    };
-    boot();
-  }, []);
-
-  // Price Sync
+  // High-speed price sync with Coincap fallback
   useEffect(() => {
     const syncPrices = async () => {
-      const realPrices = await fetchRealPrices();
-      setAssets(prev => prev.map(a => {
-        const update = realPrices[a.symbol];
-        return update ? { ...a, price: update.price, change24h: update.change } : a;
-      }));
+      try {
+        const res = await fetch('https://api.coincap.io/v2/assets?limit=50');
+        if (res.ok) {
+          const json = await res.json();
+          const realPrices: any = {};
+          json.data.forEach((asset: any) => {
+            realPrices[asset.symbol.toUpperCase()] = {
+              price: parseFloat(asset.priceUsd),
+              change: parseFloat(asset.changePercent24Hr)
+            };
+          });
+          setAssets(prev => prev.map(a => {
+            const update = realPrices[a.symbol];
+            return update ? { ...a, price: update.price, change24h: update.change } : a;
+          }));
+        }
+      } catch (e) { console.error('Price Sync Error:', e); }
     };
     syncPrices();
-    const interval = setInterval(syncPrices, 5000);
+    const interval = setInterval(syncPrices, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -290,7 +248,7 @@ const App: React.FC = () => {
                 {activeView === 'swap' && <SwapView assets={assets} isConnected={true} onConnect={() => setIsDashboardOpen(true)} onSignUp={() => {}} onConfirm={(i, c) => c()} onSwap={() => {}} onDeposit={() => {}} />}
                 {activeView === 'copy' && <CopyTradeView onMirror={() => {}} />}
                 {activeView === 'graphs' && <GraphsView assets={assets} selectedAsset={selectedAsset} marketData={marketData} setSelectedSymbol={setSelectedSymbol} />}
-                {activeView === 'portfolio' && <PortfolioView wallet={wallet} assets={assets} depositAddress={depositAddress} onConnect={() => setIsDashboardOpen(true)} onDisconnect={() => setWallet(null)} onUpdateWallet={setWallet} onRefreshBalances={() => {}} />}
+                {activeView === 'portfolio' && <PortfolioView wallet={wallet} assets={assets} depositAddress={depositAddress} vaultBalance={vaultBalance} onConnect={() => setIsDashboardOpen(true)} onDisconnect={() => setWallet(null)} onUpdateWallet={setWallet} onRefreshBalances={() => {}} />}
             </div>
 
             {notification && (

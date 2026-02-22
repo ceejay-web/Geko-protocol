@@ -95,7 +95,7 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
             </button>
         </div>
 
-        <div className="p-8 space-y-4">
+        <div className="p-8 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
             {error && (
                 <div className="p-4 bg-rose-900/20 border border-rose-500/30 rounded-2xl text-xs text-rose-400 font-bold uppercase text-center">{error}</div>
             )}

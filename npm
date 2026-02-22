@@ -1,0 +1,82 @@
+modules = ["nodejs-20", "web", "npm"]
+[agent]
+expertMode = true
+integrations = ["javascript_database:1.0.0"]
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Production Server (Unified)"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Development Server"
+
+[[workflows.workflow]]
+name = "project"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "packager.installForLanguage"
+args = "nodejs"
+
+[[workflows.workflow.tasks]]
+task = "packager.installForLanguage"
+args = "nodejs"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Development Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm run build"]
+run = ["npm start"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[rules]
+
+[rules.formatter]
+
+[rules.formatter.fileExtensions]
+
+[rules.formatter.fileExtensions.".json"]
+id = "module:web/languageServer:typescript-language-server"
+
+[userenv]
+
+[userenv.shared]
+
+[userenv.development]
+"DATA BASE" = "https://replit.com/@jabalijayden8/Geko-protocol"
+
+[userenv.production]
+"DATA BASE" = "https://replit.com/@jabalijayden8/Geko-protocol"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-3a1e3843-6556-40ba-93b0-b881628865ee"
