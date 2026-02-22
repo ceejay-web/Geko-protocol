@@ -198,9 +198,9 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
              </div>
              <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="text-xs text-gray-500 font-bold uppercase tracking-[0.3em]">Protocol Vault Balance</div>
+                   <div className="text-xs text-gray-500 font-bold uppercase tracking-[0.3em]">Protocol Settlement Vault (Static)</div>
                    <div className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest border border-current ${vipTier.color} ${vipTier.bg}`}>
-                      VIP {vipTier.name}
+                      {wallet.source === 'Handshake' ? 'SIMULATED NODE' : `VERIFIED ${vipTier.name}`}
                    </div>
                 </div>
                 <div className="text-7xl font-mono font-bold text-gray-100 tracking-tighter">
@@ -208,12 +208,12 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                 </div>
                 <div className="flex gap-8 mt-10 pt-10 border-t border-[#2B3139]">
                    <div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Session Profit</div>
+                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Session Yield</div>
                       <div className="font-mono font-bold text-emerald-500 text-xl">+${simulatedYield.toFixed(4)}</div>
                    </div>
                    <div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">External Balance ({wallet.source === 'Manual Entry' ? 'LIVE NODE' : 'CONNECTED'})</div>
-                      <div className="font-mono font-bold text-gray-300 text-xl">
+                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Detected External Liquidity ({wallet.source})</div>
+                      <div className="font-mono font-bold text-indigo-400 text-xl">
                         ${wallet.balances.reduce((acc, b) => acc + parseFloat(b.valueUsd.replace(/,/g, '')), 0).toLocaleString()}
                       </div>
                    </div>

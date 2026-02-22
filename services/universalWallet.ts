@@ -144,28 +144,43 @@ export const universalWallet = {
     },
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
-        const provider = window.ethereum;
+        // Enhanced provider detection for various browser extensions
+        const provider = window.ethereum || 
+                        (window as any).trustwallet || 
+                        (window as any).binance?.ethereum ||
+                        (window as any).coinbaseWalletExtension ||
+                        (window as any).okxwallet;
+
         if (!provider) {
-            if (walletName === 'MetaMask' && !window.ethereum) {
-                window.open('https://metamask.io/download/', '_blank');
-            }
+            if (walletName === 'MetaMask') window.open('https://metamask.io/download/', '_blank');
+            if (walletName === 'Binance Wallet') window.open('https://www.bnbchain.org/en/wallet', '_blank');
+            if (walletName === 'Trust Wallet') window.open('https://trustwallet.com/browser-extension', '_blank');
             throw new Error(`${walletName} not detected. Please install the extension.`);
         }
         
-        // Standard Web3 account request
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        if (!accounts || accounts.length === 0) throw new Error("No accounts found");
-        
-        const address = accounts[0];
-        const balances = await universalWallet.fetchAddressBalance(address);
-        return { address, source: walletName, chainType: 'evm', balances, history: [] };
+        try {
+            // Standard Web3 account request
+            const accounts = await provider.request({ method: 'eth_requestAccounts' });
+            if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+            
+            const address = accounts[0];
+            const balances = await universalWallet.fetchAddressBalance(address);
+            return { address, source: walletName, chainType: 'evm', balances, history: [] };
+        } catch (err: any) {
+            throw new Error(err.message || "Connection rejected");
+        }
     },
 
     connectSolana: async (): Promise<WalletData> => {
-        const provider = (window as any).phantom?.solana || (window as any).solana;
+        // Multi-wallet Solana provider detection
+        const provider = (window as any).phantom?.solana || 
+                        (window as any).solana || 
+                        (window as any).backpack?.solana ||
+                        (window as any).glow?.solana;
+
         if (!provider) {
             window.open('https://phantom.app/download', '_blank');
-            throw new Error("Solana wallet not detected. Please install Phantom.");
+            throw new Error("Solana wallet not detected. Please install Phantom, Backpack, or Glow.");
         }
         
         try {
