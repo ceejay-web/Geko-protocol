@@ -148,10 +148,10 @@ export const universalWallet = {
         let provider = (window as any).ethereum;
         
         // Handle specific providers if they are injected separately
-        if (walletName === 'Binance Wallet') provider = (window as any).binance?.ethereum || provider;
+        if (walletName === 'Binance' || walletName === 'Binance Wallet') provider = (window as any).binance?.ethereum || provider;
         if (walletName === 'Trust Wallet') provider = (window as any).trustwallet || provider;
         if (walletName === 'Coinbase') provider = (window as any).coinbaseWalletExtension || provider;
-        if (walletName === 'OKX') provider = (window as any).okxwallet || provider;
+        if (walletName === 'OKX' || walletName === 'OKX Wallet') provider = (window as any).okxwallet || provider;
 
         // If multiple providers are injected into window.ethereum, try to find the right one
         if (provider?.providers?.length) {

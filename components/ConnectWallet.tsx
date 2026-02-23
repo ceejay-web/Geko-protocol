@@ -37,6 +37,7 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
     { name: 'Exodus', id: 'exodus', type: 'evm', color: 'text-purple-600', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
     { name: 'MetaMask', id: 'metamask', type: 'evm', color: 'text-orange-500', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
     { name: 'Coinbase', id: 'coinbase', type: 'evm', color: 'text-blue-600', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z' },
+    { name: 'OKX Wallet', id: 'okx', type: 'evm', color: 'text-white', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
     { name: 'Phantom', id: 'phantom', type: 'svm', color: 'text-purple-500', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z' },
     { name: 'Trust Wallet', id: 'trust', type: 'evm', color: 'text-blue-400', icon: 'M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z' },
     { name: 'Simulated Node', id: 'sim', type: 'sim', color: 'text-emerald-500', icon: 'M13 10V3L4 14h7v7l9-11h-7z' }
@@ -117,7 +118,12 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
                                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d={w.icon}/></svg>
                                 </div>
                                 <span className="font-black text-gray-200 uppercase text-sm">{w.name}</span>
-                                {(w.id === 'metamask' && window.ethereum) || (w.id === 'phantom' && (window as any).solana) ? (
+                                {(w.id === 'metamask' && window.ethereum?.isMetaMask) || 
+                                 (w.id === 'phantom' && (window as any).phantom?.solana) ||
+                                 (w.id === 'trust' && (window as any).trustwallet) ||
+                                 (w.id === 'binance' && (window as any).binance?.ethereum) ||
+                                 (w.id === 'okx' && (window as any).okxwallet) ||
+                                 (w.id === 'coinbase' && (window as any).coinbaseWalletExtension) ? (
                                     <span className="text-[8px] bg-emerald-900/30 text-emerald-500 px-1.5 py-0.5 rounded uppercase font-black ml-2 tracking-widest">Detected</span>
                                 ) : null}
                             </div>
