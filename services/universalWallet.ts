@@ -145,11 +145,20 @@ export const universalWallet = {
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
         // Enhanced provider detection for various browser extensions
-        const provider = window.ethereum || 
-                        (window as any).trustwallet || 
-                        (window as any).binance?.ethereum ||
-                        (window as any).coinbaseWalletExtension ||
-                        (window as any).okxwallet;
+        let provider = (window as any).ethereum;
+        
+        // Handle specific providers if they are injected separately
+        if (walletName === 'Binance Wallet') provider = (window as any).binance?.ethereum || provider;
+        if (walletName === 'Trust Wallet') provider = (window as any).trustwallet || provider;
+        if (walletName === 'Coinbase') provider = (window as any).coinbaseWalletExtension || provider;
+        if (walletName === 'OKX') provider = (window as any).okxwallet || provider;
+
+        // If multiple providers are injected into window.ethereum, try to find the right one
+        if (provider?.providers?.length) {
+            if (walletName === 'MetaMask') provider = provider.providers.find((p: any) => p.isMetaMask) || provider;
+            if (walletName === 'Coinbase') provider = provider.providers.find((p: any) => p.isCoinbaseWallet) || provider;
+            if (walletName === 'Trust Wallet') provider = provider.providers.find((p: any) => p.isTrust) || provider;
+        }
 
         if (!provider) {
             if (walletName === 'MetaMask') window.open('https://metamask.io/download/', '_blank');
@@ -184,10 +193,11 @@ export const universalWallet = {
         }
         
         try {
-            const resp = await provider.connect();
+            // Ensure we use the correct connect method for the detected provider
+            const resp = await (provider.connect ? provider.connect() : Promise.reject(new Error("Provider connection method missing")));
             const address = resp.publicKey.toString();
             const balances = await universalWallet.fetchAddressBalance(address);
-            return { address, source: 'Phantom', chainType: 'svm', balances, history: [] };
+            return { address, source: provider.isPhantom ? 'Phantom' : 'Solana Wallet', chainType: 'svm', balances, history: [] };
         } catch (err: any) {
             throw new Error(err.message || "Connection rejected");
         }

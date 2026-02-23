@@ -46,6 +46,7 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
     setConnecting(wallet.id);
     setError('');
     try {
+        console.log(`Attempting to connect to ${wallet.name} (${wallet.type})`);
         let data: WalletData;
         if (wallet.type === 'evm') {
             data = await universalWallet.connectEVM(wallet.name);
@@ -67,8 +68,10 @@ export const ConnectWallet: React.FC<ConnectWalletProps> = ({ onConnect, onClose
                 history: []
             };
         }
+        console.log("Connection successful:", data);
         onConnect(data);
     } catch (e: any) {
+        console.error(`Connection error for ${wallet.name}:`, e);
         setError(e.message || "Connection failed");
         setConnecting(null);
     }
