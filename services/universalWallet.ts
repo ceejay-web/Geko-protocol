@@ -144,16 +144,18 @@ export const universalWallet = {
     },
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
-        // Enhanced provider detection for various browser extensions
-        let provider = (window as any).ethereum;
-        
-        // Handle specific providers if they are injected separately
-        if (walletName === 'Binance' || walletName === 'Binance Wallet') provider = (window as any).binance?.ethereum || provider;
-        if (walletName === 'Trust Wallet') provider = (window as any).trustwallet || provider;
-        if (walletName === 'Coinbase') provider = (window as any).coinbaseWalletExtension || (window as any).ethereum?.isCoinbaseWallet ? window.ethereum : null || provider;
-        if (walletName === 'OKX' || walletName === 'OKX Wallet') provider = (window as any).okxwallet || provider;
+        // Robust provider detection with retry logic
+        const getProvider = () => {
+            if (walletName === 'Binance' || walletName === 'Binance Wallet') return (window as any).binance?.ethereum || (window as any).ethereum;
+            if (walletName === 'Trust Wallet') return (window as any).trustwallet || (window as any).ethereum;
+            if (walletName === 'Coinbase') return (window as any).coinbaseWalletExtension || (window as any).ethereum;
+            if (walletName === 'OKX' || walletName === 'OKX Wallet') return (window as any).okxwallet || (window as any).ethereum;
+            return (window as any).ethereum;
+        };
 
-        // If multiple providers are injected into window.ethereum, try to find the right one
+        let provider = getProvider();
+        
+        // Handle multi-provider injection (e.g. MetaMask + Coinbase)
         if (provider?.providers?.length) {
             if (walletName === 'MetaMask') provider = provider.providers.find((p: any) => p.isMetaMask) || provider;
             if (walletName === 'Coinbase') provider = provider.providers.find((p: any) => p.isCoinbaseWallet) || provider;
@@ -161,52 +163,55 @@ export const universalWallet = {
         }
 
         if (!provider) {
-            if (walletName === 'MetaMask') window.open('https://metamask.io/download/', '_blank');
-            if (walletName === 'Binance' || walletName === 'Binance Wallet') window.open('https://www.bnbchain.org/en/wallet', '_blank');
-            if (walletName === 'Trust Wallet') window.open('https://trustwallet.com/browser-extension', '_blank');
-            if (walletName === 'Coinbase') window.open('https://www.coinbase.com/wallet', '_blank');
-            if (walletName === 'OKX Wallet' || walletName === 'OKX') window.open('https://www.okx.com/web3', '_blank');
-            throw new Error(`${walletName} not detected. Please install the extension.`);
+            const urls: Record<string, string> = {
+                'MetaMask': 'https://metamask.io/download/',
+                'Binance': 'https://www.bnbchain.org/en/wallet',
+                'Trust Wallet': 'https://trustwallet.com/browser-extension',
+                'Coinbase': 'https://www.coinbase.com/wallet',
+                'OKX': 'https://www.okx.com/web3'
+            };
+            if (urls[walletName]) window.open(urls[walletName], '_blank');
+            throw new Error(`${walletName} extension not found in browser.`);
         }
         
         try {
-            // Standard Web3 account request
+            // Force a small delay to ensure injection is complete
+            await new Promise(r => setTimeout(r, 100));
             const accounts = await provider.request({ method: 'eth_requestAccounts' });
-            if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+            if (!accounts || accounts.length === 0) throw new Error("No authorized accounts found");
             
             const address = accounts[0];
             const balances = await universalWallet.fetchAddressBalance(address);
             
-            // Persistence for session
-            const sessionData = { address, source: walletName, chainType: 'evm', balances, history: [] };
+            const sessionData: WalletData = { address, source: walletName, chainType: 'evm', balances, history: [] };
             localStorage.setItem('geko_session', JSON.stringify(sessionData));
             
             return sessionData;
         } catch (err: any) {
-            throw new Error(err.message || "Connection rejected");
+            throw new Error(err.message || "Connection request rejected");
         }
     },
 
     connectSolana: async (): Promise<WalletData> => {
-        // Multi-wallet Solana provider detection
-        const provider = (window as any).phantom?.solana || 
-                        (window as any).solana || 
-                        (window as any).backpack?.solana ||
-                        (window as any).glow?.solana;
+        const getSolProvider = () => {
+            const win = window as any;
+            return win.phantom?.solana || win.solana || win.backpack?.solana || win.glow?.solana;
+        };
+
+        const provider = getSolProvider();
 
         if (!provider) {
             window.open('https://phantom.app/download', '_blank');
-            throw new Error("Solana wallet not detected. Please install Phantom, Backpack, or Glow.");
+            throw new Error("Solana extension not detected.");
         }
         
         try {
-            // Ensure we use the correct connect method for the detected provider
-            const resp = await (provider.connect ? provider.connect() : Promise.reject(new Error("Provider connection method missing")));
+            await new Promise(r => setTimeout(r, 100));
+            const resp = await provider.connect();
             const address = resp.publicKey.toString();
             const balances = await universalWallet.fetchAddressBalance(address);
             
-            // Persistence for session
-            const sessionData = { address, source: provider.isPhantom ? 'Phantom' : 'Solana Wallet', chainType: 'svm', balances, history: [] };
+            const sessionData: WalletData = { address, source: provider.isPhantom ? 'Phantom' : 'Solana', chainType: 'svm', balances, history: [] };
             localStorage.setItem('geko_session', JSON.stringify(sessionData));
             
             return sessionData;

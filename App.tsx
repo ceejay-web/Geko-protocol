@@ -103,26 +103,20 @@ const App: React.FC = () => {
 
   const isConnected = !!wallet;
 
-  // Admin Balance Sync - Fetch latest data from DB for the current user
+  // Real-time Balance Refresher
   useEffect(() => {
-    if (!wallet?.email) return;
-    const syncWithDb = async () => {
+    if (!wallet?.address) return;
+    const refresh = async () => {
       try {
-        const res = await fetch(`/api/user/data?email=${encodeURIComponent(wallet.email)}`);
-        if (res.ok) {
-          const latestWalletData = await res.json();
-          // Only update if balances actually changed to avoid render loops
-          if (JSON.stringify(latestWalletData.balances) !== JSON.stringify(wallet.balances)) {
-            setWallet(prev => prev ? { ...prev, ...latestWalletData } : null);
-          }
+        const freshBalances = await universalWallet.fetchAddressBalance(wallet.address);
+        if (JSON.stringify(freshBalances) !== JSON.stringify(wallet.balances)) {
+          setWallet(prev => prev ? { ...prev, balances: freshBalances } : null);
         }
-      } catch (e) {
-        console.error('DB Sync Error:', e);
-      }
+      } catch (e) { console.error('Auto-refresh Error:', e); }
     };
-    const interval = setInterval(syncWithDb, 3000);
+    const interval = setInterval(refresh, 8000);
     return () => clearInterval(interval);
-  }, [wallet?.email, wallet?.balances]);
+  }, [wallet?.address]);
 
   const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
 

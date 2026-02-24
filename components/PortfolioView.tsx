@@ -207,14 +207,18 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                    ${equityBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
                 <div className="flex gap-8 mt-10 pt-10 border-t border-[#2B3139]">
-                   <div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Session Yield</div>
+                   <div className="group cursor-pointer" onClick={onRefreshBalances}>
+                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1 flex items-center">
+                        Session Yield
+                        <svg className="w-2 h-2 ml-1 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      </div>
                       <div className="font-mono font-bold text-emerald-500 text-xl">+${simulatedYield.toFixed(4)}</div>
                    </div>
                    <div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Detected External Liquidity ({wallet.source})</div>
-                      <div className="font-mono font-bold text-indigo-400 text-xl">
-                        ${wallet.balances.reduce((acc, b) => acc + parseFloat(b.valueUsd.replace(/,/g, '')), 0).toLocaleString()}
+                      <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Live External Liquidity ({wallet.source})</div>
+                      <div className="font-mono font-bold text-indigo-400 text-xl flex items-center">
+                        ${wallet.balances.reduce((acc, b) => acc + parseFloat(b.valueUsd.replace(/,/g, '')), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <div className="ml-2 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                       </div>
                    </div>
                 </div>
