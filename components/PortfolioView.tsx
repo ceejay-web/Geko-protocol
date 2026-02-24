@@ -198,9 +198,9 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
              </div>
              <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="text-xs text-gray-500 font-bold uppercase tracking-[0.3em]">Protocol Settlement Vault (Static)</div>
+                   <div className="text-xs text-gray-500 font-bold uppercase tracking-[0.3em]">Protocol Settlement Vault (Admin Managed)</div>
                    <div className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest border border-current ${vipTier.color} ${vipTier.bg}`}>
-                      {wallet.source === 'Handshake' ? 'SIMULATED NODE' : `VERIFIED ${vipTier.name}`}
+                      {wallet.source === 'Simulation' ? 'SIMULATED NODE' : `VERIFIED ${vipTier.name}`}
                    </div>
                 </div>
                 <div className="text-7xl font-mono font-bold text-gray-100 tracking-tighter">

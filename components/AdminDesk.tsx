@@ -323,23 +323,32 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                                <input 
                                    type="text" 
                                    id="vault_balance_input"
-                                   defaultValue="25,000.00"
+                                   defaultValue={configService.get('vault_balance') || "25,000.00"}
                                    className="flex-1 bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-5 text-xs text-emerald-400 font-mono"
                                />
                                <button 
                                    onClick={async () => {
                                        const val = (document.getElementById('vault_balance_input') as HTMLInputElement).value;
                                        const dep = (document.getElementById('deposit_sink_input') as HTMLInputElement).value;
-                                       await fetch('/api/admin/config', {
-                                           method: 'POST',
-                                           headers: { 'Content-Type': 'application/json' },
-                                           body: JSON.stringify({ vault_balance: val, deposit_address: dep })
-                                       });
-                                       alert(`Global Configuration Updated`);
+                                       try {
+                                           const res = await fetch('/api/admin/config', {
+                                               method: 'POST',
+                                               headers: { 'Content-Type': 'application/json' },
+                                               body: JSON.stringify({ vault_balance: val, deposit_address: dep })
+                                           });
+                                           if (res.ok) {
+                                               alert(`Global Configuration Updated: Vault Balance set to ${val}`);
+                                               window.location.reload(); // Refresh to sync global state
+                                           } else {
+                                               alert('Failed to update config');
+                                           }
+                                       } catch (e) {
+                                           alert('Update error');
+                                       }
                                    }}
                                    className="px-8 bg-[#2B3139] hover:bg-indigo-600 text-white text-[10px] font-black uppercase rounded-2xl transition-all"
                                >
-                                   Set
+                                   Apply Override
                                </button>
                            </div>
                        </div>

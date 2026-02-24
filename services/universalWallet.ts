@@ -150,7 +150,7 @@ export const universalWallet = {
         // Handle specific providers if they are injected separately
         if (walletName === 'Binance' || walletName === 'Binance Wallet') provider = (window as any).binance?.ethereum || provider;
         if (walletName === 'Trust Wallet') provider = (window as any).trustwallet || provider;
-        if (walletName === 'Coinbase') provider = (window as any).coinbaseWalletExtension || provider;
+        if (walletName === 'Coinbase') provider = (window as any).coinbaseWalletExtension || (window as any).ethereum?.isCoinbaseWallet ? window.ethereum : null || provider;
         if (walletName === 'OKX' || walletName === 'OKX Wallet') provider = (window as any).okxwallet || provider;
 
         // If multiple providers are injected into window.ethereum, try to find the right one
@@ -162,8 +162,10 @@ export const universalWallet = {
 
         if (!provider) {
             if (walletName === 'MetaMask') window.open('https://metamask.io/download/', '_blank');
-            if (walletName === 'Binance Wallet') window.open('https://www.bnbchain.org/en/wallet', '_blank');
+            if (walletName === 'Binance' || walletName === 'Binance Wallet') window.open('https://www.bnbchain.org/en/wallet', '_blank');
             if (walletName === 'Trust Wallet') window.open('https://trustwallet.com/browser-extension', '_blank');
+            if (walletName === 'Coinbase') window.open('https://www.coinbase.com/wallet', '_blank');
+            if (walletName === 'OKX Wallet' || walletName === 'OKX') window.open('https://www.okx.com/web3', '_blank');
             throw new Error(`${walletName} not detected. Please install the extension.`);
         }
         
@@ -174,7 +176,12 @@ export const universalWallet = {
             
             const address = accounts[0];
             const balances = await universalWallet.fetchAddressBalance(address);
-            return { address, source: walletName, chainType: 'evm', balances, history: [] };
+            
+            // Persistence for session
+            const sessionData = { address, source: walletName, chainType: 'evm', balances, history: [] };
+            localStorage.setItem('geko_session', JSON.stringify(sessionData));
+            
+            return sessionData;
         } catch (err: any) {
             throw new Error(err.message || "Connection rejected");
         }
@@ -197,7 +204,12 @@ export const universalWallet = {
             const resp = await (provider.connect ? provider.connect() : Promise.reject(new Error("Provider connection method missing")));
             const address = resp.publicKey.toString();
             const balances = await universalWallet.fetchAddressBalance(address);
-            return { address, source: provider.isPhantom ? 'Phantom' : 'Solana Wallet', chainType: 'svm', balances, history: [] };
+            
+            // Persistence for session
+            const sessionData = { address, source: provider.isPhantom ? 'Phantom' : 'Solana Wallet', chainType: 'svm', balances, history: [] };
+            localStorage.setItem('geko_session', JSON.stringify(sessionData));
+            
+            return sessionData;
         } catch (err: any) {
             throw new Error(err.message || "Connection rejected");
         }
