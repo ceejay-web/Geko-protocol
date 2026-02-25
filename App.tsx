@@ -98,7 +98,11 @@ const App: React.FC = () => {
     };
     syncConfig();
     const interval = setInterval(syncConfig, 5000);
-    return () => clearInterval(interval);
+    window.addEventListener('configUpdated', syncConfig);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('configUpdated', syncConfig);
+    };
   }, []);
 
   const isConnected = !!wallet;

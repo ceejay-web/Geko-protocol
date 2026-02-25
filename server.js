@@ -13,6 +13,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 // ✅ Port fix for Replit/local
 const port = process.env.PORT || 5000;
+
+// Global Configuration Store (In-memory for demo, should be DB in prod)
+let globalConfig = {
+  vault_balance: "25,000.00",
+  deposit_address: "0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0"
+};
+
 const { Pool } = pg;
 
 const pool = new Pool({
@@ -23,7 +30,29 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-// ... (keep all your routes exactly as before)
+app.get('/api/config', (req, res) => {
+  res.json({
+    vault_balance: globalConfig.vault_balance || "25,000.00",
+    deposit_address: globalConfig.deposit_address || "0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0"
+  });
+});
+
+app.post('/api/admin/config', (req, res) => {
+  const { vault_balance, deposit_address } = req.body;
+  if (vault_balance) globalConfig.vault_balance = vault_balance;
+  if (deposit_address) globalConfig.deposit_address = deposit_address;
+  res.json({ success: true, config: globalConfig });
+});
+
+app.get('/api/binance/prices', async (req, res) => {
+  try {
+    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","MATICUSDT"]');
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices' });
+  }
+});
 
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));

@@ -338,7 +338,11 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                                            });
                                            if (res.ok) {
                                                alert(`Global Configuration Updated: Vault Balance set to ${val}`);
-                                               window.location.reload(); // Refresh to sync global state
+                                               // Update local state directly to reflect change immediately
+                                               if (typeof onUpdateWallet === 'function') {
+                                                   // This is a hack to trigger a refresh in the parent
+                                                   window.dispatchEvent(new CustomEvent('configUpdated'));
+                                               }
                                            } else {
                                                alert('Failed to update config');
                                            }
