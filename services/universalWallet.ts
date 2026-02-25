@@ -144,51 +144,43 @@ export const universalWallet = {
     },
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
-        // Robust provider detection with retry logic
         const getProvider = () => {
-            if (walletName === 'Binance' || walletName === 'Binance Wallet') return (window as any).binance?.ethereum || (window as any).ethereum;
-            if (walletName === 'Trust Wallet') return (window as any).trustwallet || (window as any).ethereum;
-            if (walletName === 'Coinbase') return (window as any).coinbaseWalletExtension || (window as any).ethereum;
-            if (walletName === 'OKX' || walletName === 'OKX Wallet') return (window as any).okxwallet || (window as any).ethereum;
-            return (window as any).ethereum;
+            const win = window as any;
+            if (walletName === 'Binance') return win.binance?.ethereum || win.ethereum;
+            if (walletName === 'Trust Wallet') return win.trustwallet || win.ethereum;
+            if (walletName === 'Coinbase') return win.coinbaseWalletExtension || win.ethereum;
+            if (walletName === 'OKX') return win.okxwallet || win.ethereum;
+            return win.ethereum;
         };
 
         let provider = getProvider();
-        
-        // Handle multi-provider injection (e.g. MetaMask + Coinbase)
         if (provider?.providers?.length) {
             if (walletName === 'MetaMask') provider = provider.providers.find((p: any) => p.isMetaMask) || provider;
-            if (walletName === 'Coinbase') provider = provider.providers.find((p: any) => p.isCoinbaseWallet) || provider;
-            if (walletName === 'Trust Wallet') provider = provider.providers.find((p: any) => p.isTrust) || provider;
+            else if (walletName === 'Coinbase') provider = provider.providers.find((p: any) => p.isCoinbaseWallet) || provider;
         }
 
         if (!provider) {
             const urls: Record<string, string> = {
-                'MetaMask': 'https://metamask.io/download/',
+                'MetaMask': 'https://metamask.io/',
+                'Phantom': 'https://phantom.app/',
                 'Binance': 'https://www.bnbchain.org/en/wallet',
-                'Trust Wallet': 'https://trustwallet.com/browser-extension',
                 'Coinbase': 'https://www.coinbase.com/wallet',
+                'Trust Wallet': 'https://trustwallet.com/',
                 'OKX': 'https://www.okx.com/web3'
             };
             if (urls[walletName]) window.open(urls[walletName], '_blank');
-            throw new Error(`${walletName} extension not found in browser.`);
+            throw new Error(`${walletName} not found.`);
         }
         
         try {
-            // Force a small delay to ensure injection is complete
-            await new Promise(r => setTimeout(r, 100));
             const accounts = await provider.request({ method: 'eth_requestAccounts' });
-            if (!accounts || accounts.length === 0) throw new Error("No authorized accounts found");
-            
             const address = accounts[0];
             const balances = await universalWallet.fetchAddressBalance(address);
-            
-            const sessionData: WalletData = { address, source: walletName, chainType: 'evm', balances, history: [] };
-            localStorage.setItem('geko_session', JSON.stringify(sessionData));
-            
-            return sessionData;
+            const data = { address, source: walletName, chainType: 'evm', balances, history: [] };
+            localStorage.setItem('geko_session', JSON.stringify(data));
+            return data;
         } catch (err: any) {
-            throw new Error(err.message || "Connection request rejected");
+            throw new Error(err.message || "Connection failed");
         }
     },
 
