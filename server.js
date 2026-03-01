@@ -47,10 +47,13 @@ app.post('/api/admin/config', (req, res) => {
 app.get('/api/binance/prices', async (req, res) => {
   try {
     const symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","MATICUSDT"];
-    const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`);
+    const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(symbols))}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Binance API error');
     const data = await response.json();
     res.json(data);
   } catch (error) {
+    console.error('Binance proxy error:', error);
     res.status(500).json({ error: 'Failed to fetch prices' });
   }
 });
