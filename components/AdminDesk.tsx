@@ -74,8 +74,8 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
   const [savedId, setSavedId] = useState<string | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
-  const [vaultInput, setVaultInput] = useState('');
-  const [depositInput, setDepositInput] = useState('');
+  const [vaultInput, setVaultInput] = useState('25,000.00');
+  const [depositInput, setDepositInput] = useState('0xcDEC8d41f2acCCA50064F24A089fC3F52Fadedd0');
 
   // Load current config on mount
   useEffect(() => {
@@ -360,26 +360,45 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
 
               {/* Vault Balance */}
               <div className="space-y-3">
-                <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Vault Balance (shown to users)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    Vault Balance <span className="text-indigo-400">(displayed to all users)</span>
+                  </label>
+                  <span className="text-[8px] text-emerald-500 font-black uppercase">✎ Editable</span>
+                </div>
                 <input
                   type="text"
                   value={vaultInput}
                   onChange={e => setVaultInput(e.target.value)}
                   placeholder="e.g. 25,000.00"
-                  className="w-full bg-[#0B0E11] border border-[#2B3139] focus:border-indigo-500 rounded-2xl p-5 text-sm text-emerald-400 font-mono outline-none transition-colors"
+                  className="w-full bg-[#0B0E11] border-2 border-indigo-500/40 hover:border-indigo-500/70 focus:border-indigo-500 rounded-2xl p-5 text-base text-emerald-400 font-mono outline-none transition-colors cursor-text"
                 />
               </div>
 
               {/* Deposit Address */}
               <div className="space-y-3">
-                <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Global Deposit Address</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    Vault Destination Address <span className="text-amber-400">(where users send funds)</span>
+                  </label>
+                  <span className="text-[8px] text-emerald-500 font-black uppercase">✎ Editable</span>
+                </div>
                 <input
                   type="text"
                   value={depositInput}
                   onChange={e => setDepositInput(e.target.value)}
                   placeholder="0x... or Solana address"
-                  className="w-full bg-[#0B0E11] border border-[#2B3139] focus:border-indigo-500 rounded-2xl p-5 text-sm text-gray-100 font-mono outline-none transition-colors"
+                  className="w-full bg-[#0B0E11] border-2 border-amber-500/40 hover:border-amber-500/70 focus:border-amber-500 rounded-2xl p-5 text-sm text-amber-300 font-mono outline-none transition-colors cursor-text"
                 />
+                <div className="flex items-center space-x-2 mt-1">
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(depositInput); }}
+                    className="text-[9px] text-gray-500 hover:text-indigo-400 font-black uppercase tracking-widest transition-colors flex items-center space-x-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    <span>Copy Address</span>
+                  </button>
+                </div>
               </div>
 
               {/* Save button */}
@@ -392,11 +411,11 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                 } disabled:opacity-60`}
               >
-                {configSaving ? 'Saving...' : configSaved ? '✓ Global Config Saved' : 'Save Global Config'}
+                {configSaving ? 'Saving...' : configSaved ? '✓ Changes Saved Globally' : 'Save & Broadcast Changes'}
               </button>
 
-              <div className="p-4 bg-[#0B0E11] rounded-2xl border border-[#2B3139] text-[9px] text-gray-600 font-bold uppercase tracking-widest leading-relaxed">
-                Changes are broadcast globally within 5 seconds to all connected users worldwide.
+              <div className="p-4 bg-indigo-900/10 rounded-2xl border border-indigo-500/20 text-[9px] text-indigo-400 font-bold uppercase tracking-widest leading-relaxed">
+                Changes broadcast to all connected users within 5 seconds worldwide.
               </div>
             </div>
           </div>
