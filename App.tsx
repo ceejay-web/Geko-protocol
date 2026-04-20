@@ -21,11 +21,11 @@ import { universalWallet } from './services/universalWallet';
 type ViewMode = 'trade' | 'swap' | 'graphs' | 'portfolio' | 'copy' | 'referral';
 
 const generateMockAssets = (): AssetInfo[] => [
-  { symbol: 'BTC', name: 'Bitcoin', price: 82929.94, change24h: 1.45, marketCap: '1.6T', volume24h: '38B' },
-  { symbol: 'ETH', name: 'Ethereum', price: 2950.12, change24h: 0.85, marketCap: '350B', volume24h: '15B' },
-  { symbol: 'SOL', name: 'Solana', price: 168.45, change24h: 4.12, marketCap: '78B', volume24h: '4.5B' },
-  { symbol: 'DOT', name: 'Polkadot', price: 6.80, change24h: -1.20, marketCap: '9B', volume24h: '180M' },
-  { symbol: 'USDT', name: 'Tether', price: 1.00, change24h: 0.01, marketCap: '103B', volume24h: '45B' },
+  { symbol: 'BTC', name: 'Bitcoin', price: 84500.00, change24h: 0, marketCap: '1.67T', volume24h: '38B' },
+  { symbol: 'ETH', name: 'Ethereum', price: 1600.00, change24h: 0, marketCap: '193B', volume24h: '12B' },
+  { symbol: 'SOL', name: 'Solana', price: 135.00, change24h: 0, marketCap: '70B', volume24h: '4B' },
+  { symbol: 'BNB', name: 'BNB', price: 590.00, change24h: 0, marketCap: '85B', volume24h: '2B' },
+  { symbol: 'USDT', name: 'Tether', price: 1.00, change24h: 0.00, marketCap: '145B', volume24h: '60B' },
 ];
 
 const App: React.FC = () => {

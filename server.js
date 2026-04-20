@@ -68,30 +68,64 @@ app.post('/api/admin/config', (req, res) => {
 
 // ─── Live prices proxy ─────────────────────────────────────────────────────
 app.get('/api/binance/prices', async (req, res) => {
-  // Try Binance first (no encoding on brackets)
+  // Source 1: Kraken (works from Replit servers)
   try {
-    const url = 'https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","MATICUSDT"]';
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!response.ok) throw new Error(`Binance responded ${response.status}`);
-    const data = await response.json();
-    return res.json(data);
+    const krakenUrl = 'https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD';
+    const krakenRes = await fetch(krakenUrl, { headers: { 'Accept': 'application/json' } });
+    if (!krakenRes.ok) throw new Error(`Kraken responded ${krakenRes.status}`);
+    const krakenData = await krakenRes.json();
+    if (krakenData.error && krakenData.error.length > 0) throw new Error(krakenData.error[0]);
+    const r = krakenData.result;
+
+    // Kraken pair name lookup helper
+    const findPair = (candidates) => {
+      for (const c of candidates) {
+        if (r[c]) return r[c];
+      }
+      return null;
+    };
+
+    const btc  = findPair(['XXBTZUSD', 'XBTUSD', 'BTCUSD']);
+    const eth  = findPair(['XETHZUSD', 'ETHUSD']);
+    const sol  = findPair(['SOLUSD', 'SOLXBT']);
+    const bnb  = findPair(['BNBUSD']);
+    const matic = findPair(['MATICUSD', 'POLOUSD']);
+
+    // Calculate 24h change % from open price
+    const change = (pair) => {
+      if (!pair) return '0';
+      const last = parseFloat(pair.c[0]);
+      const open = parseFloat(pair.o);
+      return open > 0 ? (((last - open) / open) * 100).toFixed(2) : '0';
+    };
+
+    const mapped = [];
+    if (btc)   mapped.push({ symbol: 'BTCUSDT',   lastPrice: btc.c[0],   priceChangePercent: change(btc) });
+    if (eth)   mapped.push({ symbol: 'ETHUSDT',   lastPrice: eth.c[0],   priceChangePercent: change(eth) });
+    if (sol)   mapped.push({ symbol: 'SOLUSDT',   lastPrice: sol.c[0],   priceChangePercent: change(sol) });
+    if (bnb)   mapped.push({ symbol: 'BNBUSDT',   lastPrice: bnb.c[0],   priceChangePercent: change(bnb) });
+    if (matic) mapped.push({ symbol: 'MATICUSDT', lastPrice: matic.c[0], priceChangePercent: change(matic) });
+
+    if (mapped.length === 0) throw new Error('No pairs returned from Kraken');
+    console.log(`Prices from Kraken: BTC=${btc?.c[0]} ETH=${eth?.c[0]} SOL=${sol?.c[0]}`);
+    return res.json(mapped);
   } catch (err) {
-    console.warn('Binance failed, trying CoinGecko:', err.message);
+    console.warn('Kraken failed:', err.message);
   }
 
-  // Fallback: CoinGecko free API
+  // Source 2: CoinPaprika (also works from Replit)
   try {
-    const cgUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin,matic-network&vs_currencies=usd&include_24hr_change=true';
-    const cgRes = await fetch(cgUrl, { headers: { 'Accept': 'application/json' } });
-    if (!cgRes.ok) throw new Error('CoinGecko error');
-    const cgData = await cgRes.json();
-    const mapped = [
-      { symbol: 'BTCUSDT', lastPrice: String(cgData.bitcoin?.usd || 0), priceChangePercent: String(cgData.bitcoin?.usd_24h_change?.toFixed(2) || 0) },
-      { symbol: 'ETHUSDT', lastPrice: String(cgData.ethereum?.usd || 0), priceChangePercent: String(cgData.ethereum?.usd_24h_change?.toFixed(2) || 0) },
-      { symbol: 'SOLUSDT', lastPrice: String(cgData.solana?.usd || 0), priceChangePercent: String(cgData.solana?.usd_24h_change?.toFixed(2) || 0) },
-      { symbol: 'BNBUSDT', lastPrice: String(cgData.binancecoin?.usd || 0), priceChangePercent: String(cgData.binancecoin?.usd_24h_change?.toFixed(2) || 0) },
-      { symbol: 'MATICUSDT', lastPrice: String(cgData['matic-network']?.usd || 0), priceChangePercent: String(cgData['matic-network']?.usd_24h_change?.toFixed(2) || 0) },
-    ];
+    const ids = ['btc-bitcoin','eth-ethereum','sol-solana','bnb-binance-coin','matic-polygon'];
+    const results = await Promise.all(
+      ids.map(id => fetch(`https://api.coinpaprika.com/v1/tickers/${id}`).then(r => r.json()))
+    );
+    const symbols = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','MATICUSDT'];
+    const mapped = results.map((d, i) => ({
+      symbol: symbols[i],
+      lastPrice: String(d?.quotes?.USD?.price?.toFixed(2) || 0),
+      priceChangePercent: String(d?.quotes?.USD?.percent_change_24h?.toFixed(2) || 0)
+    }));
+    console.log(`Prices from CoinPaprika: BTC=${mapped[0]?.lastPrice}`);
     return res.json(mapped);
   } catch (err2) {
     console.error('All price sources failed:', err2.message);
