@@ -140,7 +140,23 @@ const App: React.FC = () => {
     let freshWallet: WalletData;
     if (typeof data === 'string') {
       freshWallet = await universalWallet.handshakeWallet(data);
-    } else { freshWallet = data; }
+    } else {
+      freshWallet = data;
+    }
+
+    // Register the user on the backend so admin can see & edit them
+    try {
+      await fetch('/api/users/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email || freshWallet.email || null,
+          wallet_address: freshWallet.address,
+          wallet_data: freshWallet
+        })
+      });
+    } catch (_) {}
+
     setWallet(freshWallet);
     setIsWalletModalOpen(false);
   };
