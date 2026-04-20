@@ -35,3 +35,9 @@ externalPort = 80
 
 [nix]
 channel = "stable-25_05"
+
+[deployment]
+deploymentTarget = "autoscale"
+publicDir = "dist/public"
+run = ["node", "server.js"]
+build = ["npm", "run", "build"]
