@@ -14,11 +14,26 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, savingId, savedId }) 
   const currentBalance = user.balance_override || user.wallet_data?.balances?.[0]?.valueUsd || '0.00';
   const [localBal, setLocalBal] = useState(currentBalance);
   const uid = user.id.toString();
+  const lastSeenMs = user.last_seen ? Date.now() - new Date(user.last_seen).getTime() : Infinity;
+  const isOnline = lastSeenMs < 45_000;
   return (
-    <div className="bg-[#181C25] border border-indigo-500/20 p-6 rounded-[28px] space-y-4 shadow-xl">
+    <div className={`bg-[#181C25] border p-6 rounded-[28px] space-y-4 shadow-xl ${isOnline ? 'border-emerald-500/40 shadow-emerald-500/10' : 'border-indigo-500/20'}`}>
       <div className="flex justify-between items-start">
-        <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center text-indigo-400 font-black text-sm">
-          {user.email ? '@' : 'W'}
+        <div className="flex items-center space-x-2">
+          <div className="w-10 h-10 bg-indigo-600/20 rounded-xl flex items-center justify-center text-indigo-400 font-black text-sm">
+            {user.email ? '@' : 'W'}
+          </div>
+          {isOnline ? (
+            <div className="flex items-center space-x-1 px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Online</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-1 px-2 py-1 bg-gray-800 border border-gray-700 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Offline</span>
+            </div>
+          )}
         </div>
         <div className="text-[8px] text-gray-500 uppercase font-black">ID: {user.id}</div>
       </div>

