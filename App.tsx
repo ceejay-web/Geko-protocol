@@ -277,7 +277,7 @@ const App: React.FC = () => {
         {!isConnected && isWalletModalOpen && (
           <ConnectWallet onConnect={handleWalletConnect} onClose={() => setIsWalletModalOpen(false)} />
         )}
-        <aside className="w-20 bg-[#181C25] border-r border-[#2B3139] flex flex-col items-center py-6 shrink-0">
+        <aside className="hidden md:flex w-20 bg-[#181C25] border-r border-[#2B3139] flex-col items-center py-6 shrink-0">
           <div className="mb-10 cursor-pointer" onClick={() => { 
             setAdminTaps(prev => {
               const next = prev + 1;
@@ -312,10 +312,25 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col min-w-0 bg-transparent relative overflow-hidden">
-            <header className="h-16 bg-[#181C25] border-b border-[#2B3139] flex items-center justify-between px-8 shrink-0">
-                <div className="flex items-center space-x-4">
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Network Status:</span>
+        <main className="flex-1 flex flex-col min-w-0 bg-transparent relative overflow-hidden pb-16 md:pb-0">
+            <header className="h-16 bg-[#181C25] border-b border-[#2B3139] flex items-center justify-between px-4 md:px-8 shrink-0">
+                <div className="flex items-center space-x-3 md:space-x-4">
+                    <div className="md:hidden cursor-pointer" onClick={() => { 
+                      setAdminTaps(prev => {
+                        const next = prev + 1;
+                        if (next >= 3) {
+                          const code = prompt("ENTER ACCESS CODE:");
+                          if (code === "196405") setAdminDeskOpen(true);
+                          return 0;
+                        }
+                        return next;
+                      });
+                    }}>
+                      <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <span className="font-black italic text-sm text-white">G</span>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline text-[10px] font-black text-gray-500 uppercase tracking-widest">Network Status:</span>
                     <div className="flex items-center space-x-2 px-3 py-1 bg-emerald-900/20 rounded-full border border-emerald-500/20">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                         <span className="text-[9px] font-black text-emerald-500 uppercase">Mainnet_Online</span>
@@ -370,6 +385,28 @@ const App: React.FC = () => {
               </div>
             )}
         </main>
+
+        {/* Mobile bottom nav */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#181C25] border-t border-[#2B3139] flex items-center justify-around px-2 z-40">
+          {([
+            { id: 'trade', label: 'Trade' },
+            { id: 'swap', label: 'Swap' },
+            { id: 'copy', label: 'Copy' },
+            { id: 'graphs', label: 'Charts' },
+            { id: 'portfolio', label: 'Wallet' },
+          ] as { id: ViewMode, label: string }[]).map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${activeView === item.id ? 'text-indigo-400' : 'text-gray-500'}`}
+            >
+              <div className={`w-7 h-7 border-2 border-current rounded-md flex items-center justify-center text-[11px] font-black ${activeView === item.id ? 'bg-indigo-600/20' : ''}`}>
+                {item.label[0]}
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest mt-0.5">{item.label}</span>
+            </button>
+          ))}
+        </nav>
 
         <SupportWidget />
         {isDashboardOpen && wallet && <WalletDashboard wallet={wallet} onClose={() => setIsDashboardOpen(false)} onDisconnect={() => setWallet(null)} />}
