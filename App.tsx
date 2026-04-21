@@ -450,6 +450,14 @@ const App: React.FC = () => {
 
         <SupportWidget />
         {isDashboardOpen && wallet && <WalletDashboard wallet={wallet} onClose={() => setIsDashboardOpen(false)} onDisconnect={() => setWallet(null)} />}
+        {/* Always-on-top admin tap target (works even when other modals are open) */}
+        <div
+          onClick={handleLogoTap}
+          className="fixed top-2 left-2 w-12 h-12 z-[700] cursor-pointer"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          aria-hidden="true"
+        />
+
         {showAccessPrompt && (
           <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowAccessPrompt(false)}>
             <div className="relative w-full max-w-sm bg-[#181C25] border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
