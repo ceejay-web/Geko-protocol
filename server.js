@@ -42,7 +42,26 @@ if (process.env.DATABASE_URL) {
       last_seen TIMESTAMPTZ DEFAULT NOW(),
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
-  `).then(() => {
+  `).then(() =>
+    pool.query(`
+      CREATE TABLE IF NOT EXISTS geko_visitors (
+        id SERIAL PRIMARY KEY,
+        visitor_id TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        language TEXT,
+        timezone TEXT,
+        screen_size TEXT,
+        platform TEXT,
+        referrer TEXT,
+        page_path TEXT,
+        wallet_extensions JSONB DEFAULT '[]',
+        visit_count INTEGER DEFAULT 1,
+        first_seen TIMESTAMPTZ DEFAULT NOW(),
+        last_seen TIMESTAMPTZ DEFAULT NOW()
+      )
+    `)
+  ).then(() => {
     dbAvailable = true;
     console.log('Database ready');
   }).catch(err => {
@@ -50,6 +69,8 @@ if (process.env.DATABASE_URL) {
     dbAvailable = false;
   });
 }
+
+let inMemoryVisitors = [];
 
 app.use(cors());
 app.use(express.json());
@@ -229,6 +250,64 @@ app.get('/api/user/data', async (req, res) => {
   const user = inMemoryUsers.find(u => u.email === email || u.wallet_address === address);
   if (user) return res.json(user);
   res.status(404).json({ error: 'User not found' });
+});
+
+// ─── Visitor tracking (every page load, even without wallet) ───────────────
+app.post('/api/visitors/track', async (req, res) => {
+  const ip = (req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '').trim();
+  const {
+    visitor_id, user_agent, language, timezone,
+    screen_size, platform, referrer, page_path, wallet_extensions
+  } = req.body || {};
+
+  if (dbAvailable && pool) {
+    try {
+      const existing = await pool.query('SELECT id, visit_count FROM geko_visitors WHERE visitor_id = $1 LIMIT 1', [visitor_id]);
+      if (existing.rows.length) {
+        await pool.query(
+          `UPDATE geko_visitors SET last_seen = NOW(), visit_count = visit_count + 1,
+             ip_address = $2, user_agent = $3, page_path = $4, wallet_extensions = $5
+           WHERE visitor_id = $1`,
+          [visitor_id, ip, user_agent, page_path, JSON.stringify(wallet_extensions || [])]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO geko_visitors
+             (visitor_id, ip_address, user_agent, language, timezone, screen_size, platform, referrer, page_path, wallet_extensions)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [visitor_id, ip, user_agent, language, timezone, screen_size, platform, referrer, page_path, JSON.stringify(wallet_extensions || [])]
+        );
+      }
+      return res.json({ success: true });
+    } catch (e) {
+      console.error('Visitor track error:', e.message);
+    }
+  }
+
+  const existing = inMemoryVisitors.find(v => v.visitor_id === visitor_id);
+  if (existing) {
+    existing.visit_count = (existing.visit_count || 1) + 1;
+    existing.last_seen = new Date().toISOString();
+    existing.ip_address = ip;
+    existing.wallet_extensions = wallet_extensions || [];
+  } else {
+    inMemoryVisitors.push({
+      id: Date.now(), visitor_id, ip_address: ip, user_agent, language, timezone,
+      screen_size, platform, referrer, page_path, wallet_extensions: wallet_extensions || [],
+      visit_count: 1, first_seen: new Date().toISOString(), last_seen: new Date().toISOString()
+    });
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/admin/visitors', async (req, res) => {
+  if (dbAvailable && pool) {
+    try {
+      const result = await pool.query('SELECT * FROM geko_visitors ORDER BY last_seen DESC LIMIT 500');
+      return res.json(result.rows);
+    } catch (e) { console.error('Visitor fetch error:', e.message); }
+  }
+  res.json(inMemoryVisitors.slice().reverse());
 });
 
 // ─── Static files & SPA ───────────────────────────────────────────────────

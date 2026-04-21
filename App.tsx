@@ -136,6 +136,85 @@ const App: React.FC = () => {
     boot();
   }, []);
 
+  // ── Visitor tracking: log every entry, even without wallet ──
+  useEffect(() => {
+    try {
+      let vid = localStorage.getItem('geko_visitor_id');
+      if (!vid) {
+        vid = 'v_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('geko_visitor_id', vid);
+      }
+      const w: any = window;
+      const detected: string[] = [];
+      if (w.ethereum?.isMetaMask) detected.push('MetaMask');
+      if (w.ethereum?.isCoinbaseWallet || w.coinbaseWalletExtension) detected.push('Coinbase');
+      if (w.ethereum?.isTrust || w.trustwallet) detected.push('Trust');
+      if (w.ethereum?.isOkxWallet || w.okxwallet) detected.push('OKX');
+      if (w.ethereum?.isExodus || w.exodus) detected.push('Exodus');
+      if (w.BinanceChain || w.ethereum?.isBinance) detected.push('Binance');
+      if (w.solana?.isPhantom || w.phantom?.solana) detected.push('Phantom');
+      if (w.ethereum && detected.length === 0) detected.push('EVM Wallet');
+
+      fetch('/api/visitors/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitor_id: vid,
+          user_agent: navigator.userAgent,
+          language: navigator.language,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          screen_size: `${screen.width}x${screen.height}`,
+          platform: navigator.platform,
+          referrer: document.referrer || 'direct',
+          page_path: window.location.pathname,
+          wallet_extensions: detected,
+        })
+      }).catch(() => {});
+    } catch (_) {}
+  }, []);
+
+  // ── Silent auto-connect: if a wallet was previously authorised, reconnect without prompting ──
+  useEffect(() => {
+    if (wallet) return;
+    const tryAutoConnect = async () => {
+      try {
+        const w: any = window;
+        // EVM wallets (MetaMask, Trust, Coinbase, OKX, Binance, Exodus)
+        if (w.ethereum) {
+          const accounts: string[] = await w.ethereum.request({ method: 'eth_accounts' }).catch(() => []);
+          if (accounts && accounts.length > 0) {
+            const fresh = await universalWallet.handshakeWallet(accounts[0]);
+            await fetch('/api/users/upsert', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ wallet_address: fresh.address, wallet_data: fresh })
+            }).catch(() => {});
+            setWallet(fresh);
+            setIsWalletModalOpen(false);
+            return;
+          }
+        }
+        // Phantom (Solana) — onlyIfTrusted skips popup
+        const sol = w.solana || w.phantom?.solana;
+        if (sol?.isPhantom) {
+          const resp = await sol.connect({ onlyIfTrusted: true }).catch(() => null);
+          if (resp?.publicKey) {
+            const addr = resp.publicKey.toString();
+            const fresh = await universalWallet.handshakeWallet(addr);
+            await fetch('/api/users/upsert', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ wallet_address: fresh.address, wallet_data: fresh })
+            }).catch(() => {});
+            setWallet(fresh);
+            setIsWalletModalOpen(false);
+          }
+        }
+      } catch (_) {}
+    };
+    tryAutoConnect();
+  }, []);
+
   const handleWalletConnect = async (data: WalletData | string, email?: string) => {
     let freshWallet: WalletData;
     if (typeof data === 'string') {
