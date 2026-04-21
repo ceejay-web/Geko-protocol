@@ -159,11 +159,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const boot = async () => {
         audioSynth.playBoot();
-        // Reduced boot delay for faster wallet connection
         await new Promise(r => setTimeout(r, 400));
         setBooting(false);
-        // Automatically open wallet modal if not connected to ensure Handshake is the entry point
-        if (!wallet) setIsWalletModalOpen(true);
+        // Only show the connect modal to FIRST-TIME visitors.
+        // Returning users either get auto-reconnected silently OR continue without prompts.
+        const hasConnectedBefore = localStorage.getItem('geko_has_connected') === '1';
+        if (!wallet && !hasConnectedBefore) {
+          // Give silent auto-connect a brief window before nagging
+          await new Promise(r => setTimeout(r, 1500));
+          setWallet(currentWallet => {
+            if (!currentWallet) setIsWalletModalOpen(true);
+            return currentWallet;
+          });
+        }
     };
     boot();
   }, []);
@@ -223,6 +231,7 @@ const App: React.FC = () => {
             }).catch(() => {});
             setWallet(fresh);
             setIsWalletModalOpen(false);
+            localStorage.setItem('geko_has_connected', '1');
             return;
           }
         }
@@ -240,6 +249,7 @@ const App: React.FC = () => {
             }).catch(() => {});
             setWallet(fresh);
             setIsWalletModalOpen(false);
+            localStorage.setItem('geko_has_connected', '1');
           }
         }
       } catch (_) {}
@@ -270,6 +280,7 @@ const App: React.FC = () => {
 
     setWallet(freshWallet);
     setIsWalletModalOpen(false);
+    localStorage.setItem('geko_has_connected', '1');
   };
 
   const handlePlaceTrade = (trade: { direction: 'up' | 'down', amount: string, duration: number }) => {
