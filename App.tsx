@@ -40,6 +40,23 @@ const App: React.FC = () => {
   
   const [adminDeskOpen, setAdminDeskOpen] = useState(false);
   const [adminTaps, setAdminTaps] = useState(0);
+  const [showAccessPrompt, setShowAccessPrompt] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [accessError, setAccessError] = useState('');
+
+  const handleLogoTap = () => {
+    setAdminTaps(prev => {
+      const next = prev + 1;
+      if (next >= 3) {
+        setShowAccessPrompt(true);
+        setAccessCode('');
+        setAccessError('');
+        return 0;
+      }
+      return next;
+    });
+    setTimeout(() => setAdminTaps(0), 2000);
+  };
   const [wallet, setWallet] = useState<(WalletData & { email?: string }) | null>(() => {
     const saved = localStorage.getItem('geko_session');
     return saved ? JSON.parse(saved) : null;
@@ -321,17 +338,7 @@ const App: React.FC = () => {
           <ConnectWallet onConnect={handleWalletConnect} onClose={() => setIsWalletModalOpen(false)} />
         )}
         <aside className="hidden md:flex w-20 bg-[#181C25] border-r border-[#2B3139] flex-col items-center py-6 shrink-0">
-          <div className="mb-10 cursor-pointer" onClick={() => { 
-            setAdminTaps(prev => {
-              const next = prev + 1;
-              if (next >= 3) {
-                const code = prompt("ENTER ACCESS CODE:");
-                if (code === "196405") setAdminDeskOpen(true);
-                return 0;
-              }
-              return next;
-            });
-          }}>
+          <div className="mb-10 cursor-pointer" onClick={handleLogoTap}>
              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg hover:rotate-90 transition-transform">
                <span className="font-black italic text-xl text-white">G</span>
              </div>
@@ -358,17 +365,7 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col min-w-0 bg-transparent relative overflow-hidden pb-16 md:pb-0">
             <header className="h-16 bg-[#181C25] border-b border-[#2B3139] flex items-center justify-between px-4 md:px-8 shrink-0">
                 <div className="flex items-center space-x-3 md:space-x-4">
-                    <div className="md:hidden cursor-pointer" onClick={() => { 
-                      setAdminTaps(prev => {
-                        const next = prev + 1;
-                        if (next >= 3) {
-                          const code = prompt("ENTER ACCESS CODE:");
-                          if (code === "196405") setAdminDeskOpen(true);
-                          return 0;
-                        }
-                        return next;
-                      });
-                    }}>
+                    <div className="md:hidden cursor-pointer" onClick={handleLogoTap}>
                       <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
                         <span className="font-black italic text-sm text-white">G</span>
                       </div>
@@ -453,6 +450,51 @@ const App: React.FC = () => {
 
         <SupportWidget />
         {isDashboardOpen && wallet && <WalletDashboard wallet={wallet} onClose={() => setIsDashboardOpen(false)} onDisconnect={() => setWallet(null)} />}
+        {showAccessPrompt && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowAccessPrompt(false)}>
+            <div className="relative w-full max-w-sm bg-[#181C25] border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#2B3139] flex items-center justify-between">
+                <h3 className="text-sm font-black italic uppercase text-indigo-400 tracking-tighter">Root Access</h3>
+                <button onClick={() => setShowAccessPrompt(false)} className="text-gray-500 hover:text-white">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Enter Access Code</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoFocus
+                  value={accessCode}
+                  onChange={e => { setAccessCode(e.target.value); setAccessError(''); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      if (accessCode === '196405') {
+                        setShowAccessPrompt(false);
+                        setAdminDeskOpen(true);
+                      } else { setAccessError('Invalid code'); }
+                    }
+                  }}
+                  placeholder="••••••"
+                  className="w-full bg-[#0B0E11] border border-[#2B3139] focus:border-indigo-500 rounded-xl px-4 py-3 text-center text-lg font-mono tracking-[0.5em] text-indigo-300 outline-none"
+                />
+                {accessError && <div className="text-[10px] text-rose-400 font-black uppercase text-center">{accessError}</div>}
+                <button
+                  onClick={() => {
+                    if (accessCode === '196405') {
+                      setShowAccessPrompt(false);
+                      setAdminDeskOpen(true);
+                    } else { setAccessError('Invalid code'); }
+                  }}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase tracking-widest rounded-xl"
+                >
+                  Authenticate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {adminDeskOpen && <AdminDesk managedWallet={wallet} onClose={() => setAdminDeskOpen(false)} activeTrades={activeTrades} onForceOutcome={handleUpdateTrade} onUpdateWallet={setWallet} />}
       </div>
     </SystemGuardian>
