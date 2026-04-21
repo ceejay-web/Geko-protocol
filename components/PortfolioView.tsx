@@ -225,15 +225,27 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
              </div>
           </div>
           
-          <div className="bg-[#181C25] rounded-[40px] p-8 border border-[#2B3139] flex flex-col justify-center space-y-6">
-             <div>
-                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Clearing Status</div>
-                <div className="text-3xl font-mono font-bold text-amber-500 uppercase italic tracking-tighter">NETWORK_MONITORING</div>
-             </div>
-             <div className="w-full h-1.5 bg-[#0B0E11] rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 animate-pulse w-[100%]"></div>
-             </div>
-             <p className="text-[10px] text-gray-600 leading-relaxed uppercase font-bold tracking-wider italic">Geko Protocols automatically scans the mempool for incoming liquidity to your specific node identifier.</p>
+          <div className="bg-[#181C25] rounded-[40px] p-6 border border-[#2B3139] flex flex-col items-center justify-center space-y-4">
+             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest text-center">Vault Deposit Address</div>
+             {currentDepositAddress ? (
+               <>
+                 <div className="bg-white p-3 rounded-2xl shadow-xl">
+                   <QRCodeSVG value={currentDepositAddress} size={150} level="H" includeMargin={false} className="rounded-lg" />
+                 </div>
+                 <div className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-3 flex items-center space-x-2">
+                   <span className="flex-1 font-mono text-[9px] text-gray-400 break-all select-all leading-tight">{currentDepositAddress}</span>
+                   <button type="button" onClick={copyAddress} className="text-indigo-500 hover:text-indigo-400 shrink-0">
+                     {copied ? <span className="text-[8px] font-black uppercase">Copied</span> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>}
+                   </button>
+                 </div>
+                 <div className="flex items-center space-x-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Live · Scan To Deposit</span>
+                 </div>
+               </>
+             ) : (
+               <div className="w-[150px] h-[150px] flex items-center justify-center"><div className="w-6 h-6 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
+             )}
           </div>
         </div>
 
