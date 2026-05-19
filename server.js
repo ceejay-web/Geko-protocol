@@ -4,6 +4,7 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 dotenv.config();
 
@@ -379,6 +380,109 @@ app.get('*', (req, res) => {
     });
   });
 });
+
+// ─── Solana Funding Listener ───────────────────────────────────────────────
+async function startSolanaListener() {
+  const treasuryAddress = process.env.TREASURY_SOL_KEY;
+  if (!treasuryAddress) {
+    console.log('[SOL Listener] TREASURY_SOL_KEY not set — skipping.');
+    return;
+  }
+  if (!dbAvailable) {
+    console.log('[SOL Listener] DB not available — skipping.');
+    return;
+  }
+
+  let treasuryPubkey;
+  try {
+    treasuryPubkey = new PublicKey(treasuryAddress);
+  } catch {
+    console.error('[SOL Listener] Invalid TREASURY_SOL_KEY address.');
+    return;
+  }
+
+  const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+  const connection = new Connection(rpcUrl, 'confirmed');
+
+  // Track last known balance so we can detect increases
+  let lastBalance = await connection.getBalance(treasuryPubkey).catch(() => 0);
+  console.log(`[SOL Listener] Watching ${treasuryAddress} | Balance: ${(lastBalance / LAMPORTS_PER_SOL).toFixed(6)} SOL`);
+
+  connection.onLogs(treasuryPubkey, async (logInfo) => {
+    if (logInfo.err) return; // ignore failed txns
+
+    const sig = logInfo.signature;
+    try {
+      // Fetch full transaction with pre/post balances
+      const tx = await connection.getParsedTransaction(sig, {
+        maxSupportedTransactionVersion: 0,
+        commitment: 'confirmed'
+      });
+      if (!tx || !tx.meta) return;
+
+      const accounts = tx.transaction.message.accountKeys;
+      const preBalances = tx.meta.preBalances;
+      const postBalances = tx.meta.postBalances;
+
+      // Find treasury index in account list
+      const treasuryIdx = accounts.findIndex(
+        a => a.pubkey.toBase58() === treasuryAddress
+      );
+      if (treasuryIdx === -1) return;
+
+      const received = postBalances[treasuryIdx] - preBalances[treasuryIdx];
+      if (received <= 0) return; // outgoing tx, ignore
+
+      const solAmount = (received / LAMPORTS_PER_SOL).toFixed(6);
+
+      // Identify sender — the account whose balance dropped the most (excluding fees)
+      let senderIdx = -1;
+      let maxDrop = 0;
+      preBalances.forEach((pre, i) => {
+        if (i === treasuryIdx) return;
+        const drop = pre - postBalances[i];
+        if (drop > maxDrop) { maxDrop = drop; senderIdx = i; }
+      });
+
+      const senderAddress = senderIdx >= 0
+        ? accounts[senderIdx].pubkey.toBase58()
+        : 'unknown';
+
+      console.log(`[SOL Listener] Deposit detected! ${solAmount} SOL from ${senderAddress} | tx: ${sig}`);
+
+      // Credit the sender in user_balances (SOL column)
+      await pool.query(`
+        INSERT INTO user_balances (wallet_address, asset_symbol, balance)
+        VALUES ($1, 'SOL', $2)
+        ON CONFLICT (wallet_address, asset_symbol)
+        DO UPDATE SET balance = user_balances.balance + $2
+      `, [senderAddress, parseFloat(solAmount)]);
+
+      // Also credit USDT equivalent using latest SOL price from our price cache
+      const priceRes = await pool.query(
+        `SELECT balance FROM user_balances WHERE wallet_address = 'PRICE_CACHE' AND asset_symbol = 'SOL'`
+      ).catch(() => ({ rows: [] }));
+      const solPrice = priceRes.rows.length ? parseFloat(priceRes.rows[0].balance) : 85;
+      const usdtEquivalent = (parseFloat(solAmount) * solPrice).toFixed(2);
+
+      await pool.query(`
+        INSERT INTO user_balances (wallet_address, asset_symbol, balance)
+        VALUES ($1, 'USDT', $2)
+        ON CONFLICT (wallet_address, asset_symbol)
+        DO UPDATE SET balance = user_balances.balance + $2
+      `, [senderAddress, parseFloat(usdtEquivalent)]);
+
+      console.log(`[SOL Listener] Credited: ${senderAddress} +${solAmount} SOL / +${usdtEquivalent} USDT`);
+
+    } catch (err) {
+      console.error('[SOL Listener] Error processing tx:', sig, err.message);
+    }
+  }, 'confirmed');
+
+  console.log('[SOL Listener] Active and subscribed.');
+}
+
+startSolanaListener();
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Geko Protocols server on port ${port}`);
