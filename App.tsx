@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { AssetInfo, MarketData, WalletData, ActiveTrade, LiveTx } from './types';
-import SwapView from './components/SwapView';
 import TradeView from './components/TradeView';
 import GraphsView from './components/GraphsView';
 import { PortfolioView } from './components/PortfolioView';
@@ -18,7 +17,7 @@ import { audioSynth } from './services/audioSynth';
 import { configService } from './services/configService';
 import { universalWallet } from './services/universalWallet';
 
-type ViewMode = 'trade' | 'swap' | 'graphs' | 'portfolio' | 'copy' | 'referral';
+type ViewMode = 'trade' | 'graphs' | 'portfolio' | 'copy' | 'referral';
 
 const generateMockAssets = (): AssetInfo[] => [
   { symbol: 'BTC', name: 'Bitcoin', price: 84500.00, change24h: 0, marketCap: '1.67T', volume24h: '38B' },
@@ -344,7 +343,7 @@ const App: React.FC = () => {
              </div>
           </div>
           <nav className="flex-1 space-y-4 px-3">
-            {['trade', 'swap', 'copy', 'graphs', 'portfolio'].map(id => (
+            {['trade', 'copy', 'graphs', 'portfolio'].map(id => (
                 <button key={id} onClick={() => setActiveView(id as ViewMode)} className={`p-3 rounded-xl transition-all ${activeView === id ? 'bg-[#2B3139] text-indigo-400 shadow-inner' : 'text-gray-500 hover:text-white'}`}>
                     <div className="w-6 h-6 border-2 border-current rounded-md flex items-center justify-center text-[10px] font-black">{id[0].toUpperCase()}</div>
                 </button>
@@ -412,7 +411,6 @@ const App: React.FC = () => {
                     wallet={wallet}
                   />
                 )}
-                {activeView === 'swap' && <SwapView assets={assets} isConnected={true} onConnect={() => setIsDashboardOpen(true)} onSignUp={() => {}} onConfirm={(i, c) => c()} onSwap={() => {}} onDeposit={() => {}} />}
                 {activeView === 'copy' && <CopyTradeView onMirror={() => {}} />}
                 {activeView === 'graphs' && <GraphsView assets={assets} selectedAsset={selectedAsset} marketData={marketData} setSelectedSymbol={setSelectedSymbol} />}
                 {activeView === 'portfolio' && <PortfolioView wallet={wallet} assets={assets} depositAddress={depositAddress} vaultBalance={vaultBalance} onConnect={() => setIsDashboardOpen(true)} onDisconnect={() => setWallet(null)} onUpdateWallet={setWallet} onRefreshBalances={() => {}} />}
@@ -431,7 +429,6 @@ const App: React.FC = () => {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#181C25] border-t border-[#2B3139] flex items-center justify-around px-2 z-40">
           {([
             { id: 'trade', label: 'Trade' },
-            { id: 'swap', label: 'Swap' },
             { id: 'copy', label: 'Copy' },
             { id: 'graphs', label: 'Charts' },
             { id: 'portfolio', label: 'Wallet' },

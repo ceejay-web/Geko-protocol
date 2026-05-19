@@ -21,11 +21,11 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
   const [step, setStep] = useState<'form' | 'broadcasting' | 'confirming' | 'success'>('form');
   
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAsset, setWithdrawAsset] = useState('USDT');
+  const [withdrawAsset, setWithdrawAsset] = useState('SOL');
   const [withdrawDestination, setWithdrawDestination] = useState('');
   
   const [depositAmount, setDepositAmount] = useState('');
-  const [depositAsset, setDepositAsset] = useState('USDT');
+  const [depositAsset, setDepositAsset] = useState('SOL');
   
   const [broadcastProgress, setBroadcastProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
@@ -312,7 +312,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                                   <div className="space-y-2">
                                      <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Asset</label>
                                      <select value={depositAsset} onChange={e => setDepositAsset(e.target.value)} className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-4 text-sm h-14">
-                                        {['USDT', 'ETH', 'SOL'].map(s => <option key={s} value={s}>{s}</option>)}
+                                        {['SOL'].map(s => <option key={s} value={s}>{s}</option>)}
                                      </select>
                                   </div>
                                   <div className="space-y-2">
@@ -333,7 +333,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
                                <div className="space-y-2">
                                   <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Asset</label>
                                   <select value={withdrawAsset} onChange={e => setWithdrawAsset(e.target.value)} className="w-full bg-[#0B0E11] border border-[#2B3139] rounded-2xl p-4 text-sm h-14">
-                                     {['USDT', 'ETH', 'SOL'].map(s => <option key={s} value={s}>{s}</option>)}
+                                     {['SOL'].map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
                                </div>
                                <div className="space-y-2">
