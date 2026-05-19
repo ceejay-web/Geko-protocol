@@ -333,6 +333,41 @@ app.get('/api/admin/visitors', async (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
+app.post('/api/execute-trade', async (req, res) => {
+    const { walletAddress, asset, tradeSize, leverage, type } = req.body;
+
+    if (!dbAvailable) {
+        return res.status(503).json({ success: false, error: "Database unavailable." });
+    }
+
+    try {
+        const balanceCheck = await pool.query(
+            'SELECT balance FROM user_balances WHERE wallet_address = $1 AND asset_symbol = $2',
+            [walletAddress, 'USDT']
+        );
+
+        if (!balanceCheck.rows.length || parseFloat(balanceCheck.rows[0].balance) < parseFloat(tradeSize)) {
+            return res.status(400).json({ success: false, error: "Insufficient USDT balance for margin." });
+        }
+
+        await pool.query(
+            'UPDATE user_balances SET balance = balance - $1 WHERE wallet_address = $2 AND asset_symbol = $3',
+            [tradeSize, walletAddress, 'USDT']
+        );
+
+        console.log(`Trade Ledger Updated: ${walletAddress} opened a ${leverage}x ${type} on ${asset}`);
+
+        return res.status(200).json({
+            success: true,
+            message: `Successfully opened ${leverage}x ${type} position!`
+        });
+
+    } catch (error) {
+        console.error("Trade execution ledger error:", error);
+        return res.status(500).json({ success: false, error: "Internal ledger execution failure." });
+    }
+});
+
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
