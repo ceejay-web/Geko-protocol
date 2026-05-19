@@ -409,6 +409,7 @@ const App: React.FC = () => {
                     isConnected={true} 
                     onPlaceTrade={handlePlaceTrade}
                     activeTrades={activeTrades}
+                    wallet={wallet}
                   />
                 )}
                 {activeView === 'swap' && <SwapView assets={assets} isConnected={true} onConnect={() => setIsDashboardOpen(true)} onSignUp={() => {}} onConfirm={(i, c) => c()} onSwap={() => {}} onDeposit={() => {}} />}

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AssetInfo, MarketData, ActiveTrade } from '../types';
+import { AssetInfo, MarketData, ActiveTrade, WalletData } from '../types';
 import MarketChart from './MarketChart';
 import GeminiAdvisor from './GeminiAdvisor';
 
@@ -13,6 +13,7 @@ interface TradeViewProps {
   isConnected: boolean;
   onPlaceTrade: (trade: { direction: 'up' | 'down', amount: string, duration: number }) => void;
   activeTrades: ActiveTrade[];
+  wallet?: (WalletData & { email?: string }) | null;
 }
 
 const TradeView: React.FC<TradeViewProps> = ({ 
@@ -23,16 +24,45 @@ const TradeView: React.FC<TradeViewProps> = ({
   marketData,
   isConnected,
   onPlaceTrade,
-  activeTrades
+  activeTrades,
+  wallet
 }) => {
   const [showIndicators, setShowIndicators] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [isAssetSelectorOpen, setIsAssetSelectorOpen] = useState(false);
+  const [tradeStatus, setTradeStatus] = useState<{ msg: string; ok: boolean } | null>(null);
   
   // Execution Form State
   const [amount, setAmount] = useState('100');
   const [duration, setDuration] = useState(60);
   const [leverage, setLeverage] = useState(20);
+
+  const executeTrade = async (direction: 'up' | 'down') => {
+    // Fire the local trade logic
+    onPlaceTrade({ direction, amount, duration });
+
+    // Send to backend ledger if wallet connected
+    if (wallet?.address) {
+      try {
+        const res = await fetch('/api/execute-trade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: wallet.address,
+            asset: selectedSymbol,
+            tradeSize: amount,
+            leverage,
+            type: direction === 'up' ? 'LONG' : 'SHORT'
+          })
+        });
+        const data = await res.json();
+        setTradeStatus({ msg: data.message || data.error || 'Order sent', ok: res.ok });
+      } catch {
+        setTradeStatus({ msg: 'Ledger sync failed', ok: false });
+      }
+      setTimeout(() => setTradeStatus(null), 3000);
+    }
+  };
 
   const userActiveTrades = activeTrades.filter(t => t.userName === 'Local_Node' && t.status === 'pending');
 
@@ -155,15 +185,20 @@ const TradeView: React.FC<TradeViewProps> = ({
                 </div>
 
                 <div className="flex flex-col space-y-4 pt-6">
+                    {tradeStatus && (
+                      <div className={`text-[10px] font-black uppercase tracking-widest text-center px-3 py-2 rounded-xl border ${tradeStatus.ok ? 'bg-emerald-900/30 border-emerald-500/30 text-emerald-400' : 'bg-rose-900/30 border-rose-500/30 text-rose-400'}`}>
+                        {tradeStatus.msg}
+                      </div>
+                    )}
                     <button 
-                        onClick={() => onPlaceTrade({ direction: 'up', amount, duration })}
+                        onClick={() => executeTrade('up')}
                         className="group relative w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all active:scale-95 overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                         <span className="relative z-10">BUY / LONG</span>
                     </button>
                     <button 
-                        onClick={() => onPlaceTrade({ direction: 'down', amount, duration })}
+                        onClick={() => executeTrade('down')}
                         className="group relative w-full py-5 bg-rose-600 hover:bg-rose-500 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all active:scale-95 overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
