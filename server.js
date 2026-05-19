@@ -65,6 +65,7 @@ if (process.env.DATABASE_URL) {
   ).then(() => {
     dbAvailable = true;
     console.log('Database ready');
+    startSolanaListener();
   }).catch(err => {
     console.warn('DB not available, using in-memory store:', err.message);
     dbAvailable = false;
@@ -481,8 +482,6 @@ async function startSolanaListener() {
 
   console.log('[SOL Listener] Active and subscribed.');
 }
-
-startSolanaListener();
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Geko Protocols server on port ${port}`);
