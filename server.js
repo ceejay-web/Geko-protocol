@@ -16,7 +16,7 @@ const port = process.env.PORT || 5000;
 
 let globalConfig = {
   vault_balance: "25,000.00",
-  deposit_address: "0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717"
+  deposit_address: "6HmBxJuv9f5P92am6AK18KZGkHGqbNUazYXXKhvrDviw"
 };
 
 // In-memory user store fallback

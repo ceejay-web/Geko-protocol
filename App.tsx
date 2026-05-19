@@ -72,7 +72,7 @@ const App: React.FC = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   
-  const [depositAddress, setDepositAddress] = useState("0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717");
+  const [depositAddress, setDepositAddress] = useState("6HmBxJuv9f5P92am6AK18KZGkHGqbNUazYXXKhvrDviw");
   const [vaultBalance, setVaultBalance] = useState("25,000.00");
   
   // High-speed price sync with Coincap fallback

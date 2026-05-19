@@ -6,7 +6,7 @@ export interface SystemConfig {
 
 // Default fallback
 const DEFAULT_CONFIG: SystemConfig = {
-  depositAddress: "0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717",
+  depositAddress: "6HmBxJuv9f5P92am6AK18KZGkHGqbNUazYXXKhvrDviw",
   maintenanceMode: false
 };
 

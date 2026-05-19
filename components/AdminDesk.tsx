@@ -90,7 +90,7 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
   const [configSaving, setConfigSaving] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
   const [vaultInput, setVaultInput] = useState('25,000.00');
-  const [depositInput, setDepositInput] = useState('0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717');
+  const [depositInput, setDepositInput] = useState('6HmBxJuv9f5P92am6AK18KZGkHGqbNUazYXXKhvrDviw');
 
   // Load current config on mount
   useEffect(() => {
@@ -100,7 +100,7 @@ const AdminDesk: React.FC<AdminDeskProps> = ({ onClose, managedWallet, activeTra
         if (res.ok) {
           const data = await res.json();
           setVaultInput(data.vault_balance || '25,000.00');
-          setDepositInput(data.deposit_address || '0x8f25603fB365f11CB25BD583Ad4e4eFD13F83717');
+          setDepositInput(data.deposit_address || '6HmBxJuv9f5P92am6AK18KZGkHGqbNUazYXXKhvrDviw');
         }
       } catch (_) {}
     };
