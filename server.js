@@ -333,7 +333,7 @@ app.get('/api/admin/visitors', async (req, res) => {
 
 // ─── Static files & SPA ───────────────────────────────────────────────────
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, { etag: false, maxAge: 0 }));
 
 app.post('/api/execute-trade', async (req, res) => {
     const { walletAddress, asset, tradeSize, leverage, type } = req.body;
