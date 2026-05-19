@@ -144,40 +144,62 @@ export const universalWallet = {
     },
 
     connectEVM: async (walletName: string): Promise<WalletData> => {
-        const getProvider = () => {
-            const win = window as any;
-            if (walletName === 'Binance') return win.binance?.ethereum || (win.ethereum?.isBinance ? win.ethereum : null);
-            if (walletName === 'Trust Wallet') return win.trustwallet || (win.ethereum?.isTrust ? win.ethereum : null);
-            if (walletName === 'Coinbase') return win.coinbaseWalletExtension || (win.ethereum?.isCoinbaseWallet ? win.ethereum : null);
-            if (walletName === 'OKX') return win.okxwallet || (win.ethereum?.isOKXWallet ? win.ethereum : null);
-            if (walletName === 'MetaMask') return (win.ethereum?.isMetaMask ? win.ethereum : null);
-            return win.ethereum;
+        const win = window as any;
+
+        // Search through providers array (EIP-6963 / multi-wallet installs)
+        const findInProviders = (predicate: (p: any) => boolean) => {
+            const list = win.ethereum?.providers || win.providers || [];
+            return list.find(predicate) || null;
         };
 
-        let provider = getProvider();
-        
-        // Final fallback: if window.ethereum exists but isn't specifically flagged, use it
-        if (!provider && (window as any).ethereum) provider = (window as any).ethereum;
+        const getProvider = () => {
+            if (walletName === 'MetaMask') {
+                // Must be MetaMask specifically — reject Exodus/Coinbase spoofs
+                return findInProviders((p: any) => p.isMetaMask && !p.isExodus && !p.isCoinbaseWallet && !p.isBraveWallet)
+                    || (win.ethereum?.isMetaMask && !win.ethereum?.isExodus && !win.ethereum?.isCoinbaseWallet ? win.ethereum : null);
+            }
+            if (walletName === 'Exodus') {
+                return win.exodus?.ethereum
+                    || findInProviders((p: any) => p.isExodus)
+                    || (win.ethereum?.isExodus ? win.ethereum : null);
+            }
+            if (walletName === 'Coinbase') {
+                return win.coinbaseWalletExtension
+                    || findInProviders((p: any) => p.isCoinbaseWallet)
+                    || (win.ethereum?.isCoinbaseWallet ? win.ethereum : null);
+            }
+            if (walletName === 'Trust Wallet') {
+                return win.trustwallet
+                    || findInProviders((p: any) => p.isTrust || p.isTrustWallet)
+                    || (win.ethereum?.isTrust ? win.ethereum : null);
+            }
+            if (walletName === 'Binance') {
+                return win.BinanceChain
+                    || win.binance?.ethereum
+                    || findInProviders((p: any) => p.isBinance)
+                    || (win.ethereum?.isBinance ? win.ethereum : null);
+            }
+            if (walletName === 'OKX Wallet') {
+                return win.okxwallet
+                    || findInProviders((p: any) => p.isOKExWallet || p.isOKXWallet)
+                    || (win.ethereum?.isOKExWallet ? win.ethereum : null);
+            }
+            return null;
+        };
 
-        if (provider?.providers?.length) {
-            if (walletName === 'MetaMask') provider = provider.providers.find((p: any) => p.isMetaMask) || provider;
-            else if (walletName === 'Coinbase') provider = provider.providers.find((p: any) => p.isCoinbaseWallet) || provider;
-            else if (walletName === 'Binance') provider = provider.providers.find((p: any) => p.isBinance) || provider;
-            else if (walletName === 'Trust Wallet') provider = provider.providers.find((p: any) => p.isTrust) || provider;
-        }
+        const provider = getProvider();
 
         if (!provider) {
             const urls: Record<string, string> = {
-                'MetaMask': 'https://metamask.io/',
-                'Phantom': 'https://phantom.app/',
+                'MetaMask': 'https://metamask.io/download/',
+                'Exodus': 'https://www.exodus.com/download/',
                 'Binance': 'https://www.bnbchain.org/en/wallet',
                 'Coinbase': 'https://www.coinbase.com/wallet',
-                'Trust Wallet': 'https://trustwallet.com/',
-                'OKX': 'https://www.okx.com/web3',
-                'Exodus': 'https://www.exodus.com/'
+                'Trust Wallet': 'https://trustwallet.com/download',
+                'OKX Wallet': 'https://www.okx.com/web3',
             };
             if (urls[walletName]) window.open(urls[walletName], '_blank');
-            throw new Error(`${walletName} extension not detected. Please install and refresh.`);
+            throw new Error(`${walletName} not detected. Please install the extension and refresh.`);
         }
         
         try {
