@@ -4,7 +4,9 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
+import { sendAndConfirmTransaction } from '@solana/web3.js';
+import bs58 from 'bs58';
 
 dotenv.config();
 
@@ -482,7 +484,68 @@ async function startSolanaListener() {
 
   console.log('[SOL Listener] Active and subscribed.');
 }
+app.post('/api/execute-withdrawal', async (req, res) => {
+    const { walletAddress, destinationAddress, amount, asset } = req.body;
 
+    if (!dbAvailable) {
+        return res.status(503).json({ success: false, error: "Database unavailable." });
+    }
+
+    try {
+        // 1. Check database ledger to verify the user has sufficient funds
+        const balanceCheck = await pool.query(
+            'SELECT balance FROM user_balances WHERE wallet_address = $1 AND asset_symbol = $2',
+            [walletAddress, asset]
+        );
+
+        if (!balanceCheck.rows.length || parseFloat(balanceCheck.rows[0].balance) < parseFloat(amount)) {
+            return res.status(400).json({ success: false, error: "Insufficient balance for withdrawal." });
+        }
+
+        // 2. Initialize connection to Solana Mainnet or Devnet
+        const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+        const connection = new Connection(rpcUrl, 'confirmed');
+
+        // 3. Reconstruct your Treasury Keypair safely from Secrets
+        const secretKeyString = process.env.TREASURY_SECRET_KEY;
+        if (!secretKeyString) {
+            return res.status(500).json({ success: false, error: "Server wallet authorization missing." });
+        }
+
+        // Decode secret key (handles standard base58 or array string formats)
+        let secretKey;
+        if (secretKeyString.includes(',')) {
+            secretKey = Uint8Array.from(JSON.parse(secretKeyString));
+        } else {
+            secretKey = bs58.decode(secretKeyString);
+        }
+        const treasuryKeypair = Keypair.fromSecretKey(secretKey);
+
+        // 4. Build and send the on-chain transfer transaction
+        const transaction = new Transaction().add(
+            SystemProgram.transfer({
+                fromPubkey: treasuryKeypair.publicKey,
+                toPubkey: new PublicKey(destinationAddress),
+                lamports: amount * 1000000000, // Converts SOL to Lamports
+            })
+        );
+
+        const signature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
+
+        // 5. Deduct the amount from the database ledger after a successful blockchain transaction
+        await pool.query(
+            'UPDATE user_balances SET balance = balance - $1 WHERE wallet_address = $2 AND asset_symbol = $3',
+            [amount, walletAddress, asset]
+        );
+
+        console.log(`💸 Withdrawal Completed: ${amount} SOL sent to ${destinationAddress}. Tx: ${signature}`);
+        return res.status(200).json({ success: true, txSignature: signature });
+
+    } catch (error) {
+        console.error("Withdrawal execution failure:", error);
+        return res.status(500).json({ success: false, error: "Transaction processing failed." });
+    }
+});
 app.listen(port, '0.0.0.0', () => {
   console.log(`Geko Protocols server on port ${port}`);
 });

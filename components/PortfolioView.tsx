@@ -100,8 +100,20 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ wallet, assets, de
             await new Promise(r => setTimeout(r, 4000));
             txHash = 'Verification_Signed_Local_Node';
         } else {
-            txHash = `0x${Math.random().toString(16).slice(2, 42)}`;
-            await new Promise(r => setTimeout(r, 2000));
+            // POST to backend withdrawal endpoint
+            const res = await fetch('/api/execute-withdrawal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    walletAddress: wallet!.address,
+                    destinationAddress: withdrawDestination.trim(),
+                    amount: parseFloat(withdrawAmount),
+                    asset: withdrawAsset
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+            txHash = data.txSignature || `pending_${Date.now()}`;
         }
 
         const nodeInterval = setInterval(() => {
